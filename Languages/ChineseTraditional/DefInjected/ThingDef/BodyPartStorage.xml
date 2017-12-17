@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <IS_BodyPartStorage.label>身體部件存儲箱</IS_BodyPartStorage.label>
+  <IS_BodyPartStorage.description>一個用於存儲身體部件的箱子。</IS_BodyPartStorage.description>
+  <IS_BodyPartStorage_Blueprint.label>身體部件存儲箱（藍圖）</IS_BodyPartStorage_Blueprint.label>
+  <IS_BodyPartStorage_Blueprint_Install.label>身體部件存儲箱（藍圖）</IS_BodyPartStorage_Blueprint_Install.label>
+  <IS_BodyPartStorage_Frame.label>身體部件存儲箱（建造中）</IS_BodyPartStorage_Frame.label>
+  <IS_BodyPartStorage_Frame.description>一個用於存儲身體部件的箱子。</IS_BodyPartStorage_Frame.description>
+
+
+</LanguageData>

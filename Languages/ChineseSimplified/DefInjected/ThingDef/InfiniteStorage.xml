@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <InfiniteStorage.label>无限制存储箱</InfiniteStorage.label>
+  <InfiniteStorage.description>这个箱子可以存储所有的东西。</InfiniteStorage.description>
+  <InfiniteStorage_Blueprint.label>无限制存储箱（蓝图）</InfiniteStorage_Blueprint.label>
+  <InfiniteStorage_Blueprint_Install.label>无限制存储箱（蓝图）</InfiniteStorage_Blueprint_Install.label>
+  <InfiniteStorage_Frame.label>无限制存储箱（建造中）</InfiniteStorage_Frame.label>
+  <InfiniteStorage_Frame.description>这个箱子可以存储所有的东西。</InfiniteStorage_Frame.description>
+
+
+</LanguageData>

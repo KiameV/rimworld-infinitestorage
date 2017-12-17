@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <IS_TextileStorage.label>織物存儲箱</IS_TextileStorage.label>
+  <IS_TextileStorage.description>一個用於存儲所有織物和毛料的存儲箱。</IS_TextileStorage.description>
+  <IS_TextileStorage_Blueprint.label>織物存儲箱（藍圖）</IS_TextileStorage_Blueprint.label>
+  <IS_TextileStorage_Blueprint_Install.label>織物存儲箱（藍圖）</IS_TextileStorage_Blueprint_Install.label>
+  <IS_TextileStorage_Frame.label>織物存儲箱（建造中）</IS_TextileStorage_Frame.label>
+  <IS_TextileStorage_Frame.description>一個用於存儲所有織物和毛料的存儲箱。</IS_TextileStorage_Frame.description>
+
+
+</LanguageData>
