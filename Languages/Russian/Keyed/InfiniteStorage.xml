@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+	<InfiniteStorage.StoragePriority>Приоритет</InfiniteStorage.StoragePriority>
+
+	<InfiniteStorage.Empty>Заполнить</InfiniteStorage.Empty>
+	<InfiniteStorage.EmptyDesc>Выложить всю текстиль из ящика на пол.</InfiniteStorage.EmptyDesc>
+	<InfiniteStorage.Collect>Собрать</InfiniteStorage.Collect>
+	<InfiniteStorage.CollectDesc>Собрать текстиль склада в ящик.</InfiniteStorage.CollectDesc>
+	<InfiniteStorage.IncludeInTradeDeals>Продать текстиль</InfiniteStorage.IncludeInTradeDeals>
+	<InfiniteStorage.IncludeInTradeDealsDesc>Вклоючать ли хранимые такстили в торговые сделки?</InfiniteStorage.IncludeInTradeDealsDesc>
+</LanguageData>

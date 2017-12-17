@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+	<InfiniteStorage.StoragePriority>Priority</InfiniteStorage.StoragePriority>
+	<InfiniteStorage.Count>Count</InfiniteStorage.Count>
+	<InfiniteStorage.StoredWeight>Stored Weight</InfiniteStorage.StoredWeight>
+	
+	<InfiniteStorage.Empty>Empty</InfiniteStorage.Empty>
+	<InfiniteStorage.EmptyDesc>Place all the stored things on the ground.</InfiniteStorage.EmptyDesc>
+	<InfiniteStorage.Collect>Collect</InfiniteStorage.Collect>
+	<InfiniteStorage.CollectDesc>Collect the things around the storage and store it.</InfiniteStorage.CollectDesc>
+	<InfiniteStorage.IncludeInTradeDeals>Sell Stored Things</InfiniteStorage.IncludeInTradeDeals>
+	<InfiniteStorage.IncludeInTradeDealsDesc>Toggle whether to include the stored things in trade deals.</InfiniteStorage.IncludeInTradeDealsDesc>
+	
+	<InfiniteStorage.View>View Storage</InfiniteStorage.View>
+	<InfiniteStorage.ViewDesc>View the items stored.</InfiniteStorage.ViewDesc>
+	
+	<!-- Settings Page -->
+	<InfiniteStorage>Infinite Storage</InfiniteStorage>
+	<InfiniteStorage.EnergyFactor>Energy Factor</InfiniteStorage.EnergyFactor>
+	<InfiniteStorage.EnergyFactorDesc>How Energy Factor is used: (power needed) = (Energy Factor) * (stored weight)</InfiniteStorage.EnergyFactorDesc>
+	<InfiniteStorage.EnergyFactorNumberGreaterThanZero>Must be a number greater than 0.</InfiniteStorage.EnergyFactorNumberGreaterThanZero>
+	<InfiniteStorage.EnergyFactorSet>Energy Factor set to {v}.</InfiniteStorage.EnergyFactorSet>
+</LanguageData>

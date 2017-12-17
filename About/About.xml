@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+	<name>[KV] Infinite Storage - B18</name>
+	<author>Kiame Vivacity</author>
+	<url>https://ludeon.com/forums/index.php?topic=37698.msg385779</url>
+	<targetVersion>0.18.0</targetVersion>
+	<description>
+Got energy?
+Need storage space?
+Infinite Storage is right for you!
+
+The amount of energy required is based off the weight of the stored items in Infinite Storage.
+I am currently tweaking energy/storage ratio and welcome input as I experiment. I have also made the ratio adjustable in Mod Settings.
+
+There are two 'specialty' storage units: Body Parts and Textiles. These units are capable of storing Body Parts &amp; Medicine and Leather/Wool at without energy.
+	</description>
+</ModMetaData>
