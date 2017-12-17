@@ -117,6 +117,8 @@ namespace InfiniteStorage
         
         public void Empty(List<Thing> droppedThings = null)
         {
+            if (!this.IsOperational)
+                return;
             try
             {
                 this.AllowAdds = false;
@@ -145,7 +147,10 @@ namespace InfiniteStorage
 
         public void Reclaim()
         {
-            this.Add(BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1));
+            if (this.IsOperational)
+            {
+                this.Add(BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1));
+            }
         }
 
         public int StoredThingCount(ThingDef def)
@@ -383,27 +388,30 @@ namespace InfiniteStorage
             });
             ++key;
 
-            l.Add(new Command_Action
+            if (this.IsOperational)
             {
-                icon = ViewUI.emptyTexture,
-                defaultDesc = "InfiniteStorage.EmptyDesc".Translate(),
-                defaultLabel = "InfiniteStorage.Empty".Translate(),
-                activateSound = SoundDef.Named("Click"),
-                action = delegate {  this.Empty(); },
-                groupKey = key
-            });
-            ++key;
+                l.Add(new Command_Action
+                {
+                    icon = ViewUI.emptyTexture,
+                    defaultDesc = "InfiniteStorage.EmptyDesc".Translate(),
+                    defaultLabel = "InfiniteStorage.Empty".Translate(),
+                    activateSound = SoundDef.Named("Click"),
+                    action = delegate { this.Empty(); },
+                    groupKey = key
+                });
+                ++key;
 
-            l.Add(new Command_Action
-            {
-                icon = ViewUI.collectTexture,
-                defaultDesc = "InfiniteStorage.CollectDesc".Translate(),
-                defaultLabel = "InfiniteStorage.Collect".Translate(),
-                activateSound = SoundDef.Named("Click"),
-                action = delegate { this.Reclaim(); },
-                groupKey = key
-            });
-            ++key;
+                l.Add(new Command_Action
+                {
+                    icon = ViewUI.collectTexture,
+                    defaultDesc = "InfiniteStorage.CollectDesc".Translate(),
+                    defaultLabel = "InfiniteStorage.Collect".Translate(),
+                    activateSound = SoundDef.Named("Click"),
+                    action = delegate { this.Reclaim(); },
+                    groupKey = key
+                });
+                ++key;
+            }
 
             l.Add(new Command_Action
             {

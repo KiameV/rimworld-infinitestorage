@@ -99,8 +99,8 @@ namespace InfiniteStorage
         {
             foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
             {
-                if (storage.IsOperational && 
-                    storage.settings.Priority > currentPriority && 
+                if (storage.IsOperational &&
+                    storage.settings.Priority > currentPriority &&
                     storage.settings.AllowedToAccept(t))
                 {
                     currentPriority = storage.settings.Priority;
