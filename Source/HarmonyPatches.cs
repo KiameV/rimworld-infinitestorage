@@ -101,8 +101,7 @@ namespace InfiniteStorage
             {
                 if (storage.IsOperational && 
                     storage.settings.Priority > currentPriority && 
-                    storage.settings.AllowedToAccept(t) && 
-                    carrier.CanReach(storage.Position, PathEndMode.Touch, Danger.Some, false, TraverseMode.ByPawn))
+                    storage.settings.AllowedToAccept(t))
                 {
                     currentPriority = storage.settings.Priority;
                     foundCell = storage.Position;
