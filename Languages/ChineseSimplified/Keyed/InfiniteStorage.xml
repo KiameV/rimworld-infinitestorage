@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <InfiniteStorage.StoragePriority>优先级</InfiniteStorage.StoragePriority>
+  <InfiniteStorage.Count>总数</InfiniteStorage.Count>
+  <InfiniteStorage.StoredWeight>已保存质量</InfiniteStorage.StoredWeight>
+
+  <InfiniteStorage.Empty>清空</InfiniteStorage.Empty>
+  <InfiniteStorage.EmptyDesc>把所有已存储的物品放到地上。</InfiniteStorage.EmptyDesc>
+  <InfiniteStorage.Collect>收捡</InfiniteStorage.Collect>
+  <InfiniteStorage.CollectDesc>收集并存储散落在存储箱周围的物品。</InfiniteStorage.CollectDesc>
+  <InfiniteStorage.IncludeInTradeDeals>出售</InfiniteStorage.IncludeInTradeDeals>
+  <InfiniteStorage.IncludeInTradeDealsDesc>切换，是否让已存储的物品出现在贸易目录里。</InfiniteStorage.IncludeInTradeDealsDesc>
+
+  <InfiniteStorage.View>查看库存</InfiniteStorage.View>
+  <InfiniteStorage.ViewDesc>查看已存储的物品。</InfiniteStorage.ViewDesc>
+
+  <!-- Settings Page -->
+  <InfiniteStorage>无限制存储箱</InfiniteStorage>
+  <InfiniteStorage.EnergyFactor>功率倍数</InfiniteStorage.EnergyFactor>
+  <InfiniteStorage.EnergyFactorDesc>功率倍数如何工作的：功率需求=功率倍数x已存储物品总质量。</InfiniteStorage.EnergyFactorDesc>
+  <InfiniteStorage.EnergyFactorNumberGreaterThanZero>必须是大于0的数字。</InfiniteStorage.EnergyFactorNumberGreaterThanZero>
+  <InfiniteStorage.EnergyFactorSet>功率倍数设置为{v}。</InfiniteStorage.EnergyFactorSet>
+
+</LanguageData>
