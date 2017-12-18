@@ -56,6 +56,9 @@
 			<ignoreStoredThingsBeauty>true</ignoreStoredThingsBeauty>
 			<fixedStorageSettings>
 				<filter>
+					<specialFiltersToDisallow>
+						<li>AllowRotten</li>
+					</specialFiltersToDisallow>
 					<categories>
 						<li>Manufactured</li>
 						<li>ResourcesRaw</li>
@@ -71,6 +74,9 @@
 			<defaultStorageSettings>
 				<priority>Preferred</priority>
 				<filter>
+					<specialFiltersToDisallow>
+						<li>AllowRotten</li>
+					</specialFiltersToDisallow>
 					<categories>
 						<li>Manufactured</li>
 						<li>ResourcesRaw</li>
