@@ -18,6 +18,9 @@
 	<InfiniteStorage>Infinite Storage</InfiniteStorage>
 	<InfiniteStorage.EnergyFactor>Energy Factor</InfiniteStorage.EnergyFactor>
 	<InfiniteStorage.EnergyFactorDesc>How Energy Factor is used: (power needed) = (Energy Factor) * (stored weight)</InfiniteStorage.EnergyFactorDesc>
-	<InfiniteStorage.EnergyFactorNumberGreaterThanZero>Must be a number greater than 0.</InfiniteStorage.EnergyFactorNumberGreaterThanZero>
 	<InfiniteStorage.EnergyFactorSet>Energy Factor set to {v}.</InfiniteStorage.EnergyFactorSet>
+	<InfiniteStorage.CollectThingsAutomatically>Collect Automatically</InfiniteStorage.CollectThingsAutomatically>
+	<InfiniteStorage.TimeBetweenAutoCollects>Time Between Auto-Collects in Seconds</InfiniteStorage.TimeBetweenAutoCollects>
+	<InfiniteStorage.TimeBetweenAutoCollectsSet>Time Between Auto-Collects set to {v}.</InfiniteStorage.TimeBetweenAutoCollectsSet>
+	<InfiniteStorage.NumberGreaterThanZero>Must be a number greater than 0.</InfiniteStorage.NumberGreaterThanZero>
 </LanguageData>

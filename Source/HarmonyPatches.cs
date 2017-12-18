@@ -84,7 +84,19 @@ namespace InfiniteStorage
             {
                 foreach (Thing thing in ts.StoredThings)
                 {
-                    countedAmounts[thing.def] = thing.stackCount;
+                    if (thing.def.EverStoreable && thing.def.CountAsResource && !thing.IsNotFresh())
+                    {
+                        int count;
+                        if (countedAmounts.TryGetValue(thing.def, out count))
+                        {
+                            count += thing.stackCount;
+                        }
+                        else
+                        {
+                            count = thing.stackCount;
+                        }
+                        countedAmounts[thing.def] = count;
+                    }
                 }
             }
         }
@@ -486,8 +498,8 @@ namespace InfiniteStorage
                         while (usedTexiltes.Count > 0)
                         {
                             ThingsToUse t = usedTexiltes.Pop();
-                            t.Storage.Remove(t.Thing, t.Count);
-                            BuildingUtil.DropThing(t.Thing, t.Count, t.Storage, t.Storage.Map, false);
+                            Thing removed = t.Storage.Remove(t.Thing, t.Count);
+                            BuildingUtil.DropThing(removed, removed.stackCount, t.Storage, t.Storage.Map, false);
                         }
                     }
                     usedTexiltes.Clear();
@@ -596,6 +608,51 @@ namespace InfiniteStorage
            }
        }*/
 
+    [HarmonyPatch(typeof(WorkGiver_Refuel), "FindBestFuel")]
+    static class Patch_WorkGiver_Refuel_FindBestFuel
+    {
+        private static Dictionary<Thing, Building_InfiniteStorage> droppedAndStorage = null;
+        static void Prefix(Pawn pawn, Thing refuelable)
+        {
+            if (WorldComp.HasInfiniteStorages)
+            {
+                droppedAndStorage = new Dictionary<Thing, Building_InfiniteStorage>();
+
+                ThingFilter filter = refuelable.TryGetComp<CompRefuelable>().Props.fuelFilter;
+
+                foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
+                {
+                    if (storage.Spawned && storage.Map == pawn.Map && storage.IsOperational)
+                    {
+                        Thing t;
+                        if (storage.TryRemove(filter, out t))
+                        {
+                            List<Thing> removedThings = new List<Thing>();
+                            BuildingUtil.DropThing(t, t.def.stackLimit, storage, storage.Map, false, removedThings);
+                            if (removedThings.Count > 0)
+                                droppedAndStorage.Add(removedThings[0], storage);
+                        }
+                    }
+                }
+            }
+        }
+
+        static void Postfix(Thing __result)
+        {
+            if (droppedAndStorage != null)
+            {
+                foreach (KeyValuePair<Thing, Building_InfiniteStorage> kv in droppedAndStorage)
+                {
+                    if (kv.Key != __result)
+                    {
+                        kv.Value.Add(kv.Key);
+                    }
+                }
+                droppedAndStorage.Clear();
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(ItemAvailability), "ThingsAvailableAnywhere")]
     static class Patch_ItemAvailability_ThingsAvailableAnywhere
     {
@@ -623,8 +680,8 @@ namespace InfiniteStorage
                     {
                         if (thing.stackCount >= need.count)
                         {
-                            storage.Remove(thing, need.count);
-                            BuildingUtil.DropThing(thing, need.count, storage, storage.Map, false);
+                            Thing removed = storage.Remove(thing, need.count);
+                            BuildingUtil.DropThing(removed, removed.stackCount, storage, storage.Map, false);
 
                             __result = true;
                             ((Dictionary<int, bool>)CachedResultsFI.GetValue(__instance))[Gen.HashCombine<Faction>(need.GetHashCode(), pawn.Faction)] = __result;

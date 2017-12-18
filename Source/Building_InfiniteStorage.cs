@@ -27,6 +27,8 @@ namespace InfiniteStorage
         public bool UsesPower { get { return this.compPowerTrader != null; } }
         public bool IsOperational { get { return this.compPowerTrader == null || this.compPowerTrader.PowerOn; } }
 
+        private long lastAutoReclaim = 0;
+
         [Unsaved]
         private float storedCount = 0;
         [Unsaved]
@@ -145,11 +147,12 @@ namespace InfiniteStorage
             }
         }
 
-        public void Reclaim()
+        public void Reclaim(bool respectReserved = false)
         {
             if (this.IsOperational)
             {
                 this.Add(BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1));
+                lastAutoReclaim = DateTime.Now.Ticks;
             }
         }
 
@@ -233,24 +236,39 @@ namespace InfiniteStorage
             return this.storedThings.TryGetValue(def.label, out t);
         }
 
-        public bool Remove(Thing thing, int count)
+        public bool TryRemove(ThingFilter filter, out Thing removed)
+        {
+            foreach (Thing t in this.storedThings.Values)
+            {
+                if (filter.Allows(t.def))
+                {
+                    int count = Math.Min(t.stackCount, t.def.stackLimit);
+                    removed = this.Remove(t, count);
+                    return true;
+                }
+            }
+            removed = null;
+            return false;
+        }
+
+        public Thing Remove(Thing thing, int count)
         {
             Thing t;
             if (this.storedThings.TryGetValue(thing.def.label, out t))
             {
-                if (count < thing.stackCount)
+                if (t.stackCount <= count)
                 {
-                    count = thing.stackCount;
+                    count = t.stackCount;
+                    this.storedThings.Remove(t.def.label);
+                }
+                else
+                {
+                    t = t.SplitOff(count);
                 }
 
                 this.UpdateStoredStats(t, count);
-
-                if (t.stackCount <= count)
-                {
-                    this.storedThings.Remove(t.def.label);
-                }
             }
-            return true;
+            return t;
         }
 
         private void UpdateStoredStats(Thing thing, int count, bool force = false)
@@ -354,13 +372,19 @@ namespace InfiniteStorage
 #endif
             return sb.ToString();
         }
-
+        
         public override void TickRare()
         {
             base.TickRare();
             if (this.Spawned && base.Map != null && this.compPowerTrader != null)
             {
                 this.compPowerTrader.PowerOutput = -1 * Settings.EnergyFactor * this.storedWeight;
+            }
+
+            if (Settings.CollectThingsAutomatically && 
+                DateTime.Now.Ticks - lastAutoReclaim > Settings.TimeBetweenAutoCollectsTicks)
+            {
+                this.Reclaim(true);
             }
         }
 

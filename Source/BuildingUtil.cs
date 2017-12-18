@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Verse;
+using Verse.AI;
 
 namespace InfiniteStorage
 {
@@ -17,6 +18,8 @@ namespace InfiniteStorage
             int minZ = Math.Max(0, position.z - distance);
             int maxZ = Math.Min(map.info.Size.z, position.z + distance);
 
+            ReservationManager rsvmgr = map.reservationManager;
+
             List<Thing> list = new List<Thing>();
             for (int x = minX - 1; x <= maxX; ++x)
             {
@@ -24,7 +27,10 @@ namespace InfiniteStorage
                 {
                     foreach (Thing t in map.thingGrid.ThingsAt(new IntVec3(x, position.y, z)))
                     {
-                        list.Add(t);
+                        if (rsvmgr == null || !rsvmgr.IsReservedByAnyoneOf(new LocalTargetInfo(t), Faction.OfPlayer))
+                        {
+                            list.Add(t);
+                        }
                     }
                 }
             }
