@@ -193,8 +193,7 @@ namespace InfiniteStorage
         {
             if (thing == null || 
                 !base.settings.AllowedToAccept(thing) || 
-                !this.IsOperational ||
-                this.stackCount + thing.stackCount > BuildingUtil.MAX_STACK_SIZE)
+                !this.IsOperational)
             {
                 return false;
             }

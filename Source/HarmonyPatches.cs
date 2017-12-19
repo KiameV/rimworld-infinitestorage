@@ -103,18 +103,22 @@ namespace InfiniteStorage
     }
     #endregion
 
-    #region For right click hauling
+    /*#region For right click hauling
     [HarmonyPatch(typeof(StoreUtility), "TryFindBestBetterStoreCellFor")]
     static class Patch_StoreUtility_TryFindBestBetterStoreCellFor
     {
         static void Postfix(ref bool __result, Thing t, Pawn carrier, Map map, StoragePriority currentPriority, Faction faction, ref IntVec3 foundCell, bool needAccurateResult)
         {
+            Log.Error("Patch Haul: Result: " + __result + " Thing: " + t.Label + " Pawn: " + carrier.Name + " Priority: " + currentPriority + " Faction: " + faction);
             foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
             {
-                if (storage.IsOperational &&
+                Log.Error("  storage: " + storage.Label + " Priority: " + storage.settings.Priority);
+                if (storage.Faction == faction &&
+                    storage.IsOperational &&
                     storage.settings.Priority > currentPriority &&
                     storage.settings.AllowedToAccept(t))
                 {
+                    Log.Error("    Is better");
                     currentPriority = storage.settings.Priority;
                     foundCell = storage.Position;
                     __result = true;
@@ -122,7 +126,7 @@ namespace InfiniteStorage
             }
         }
     }
-    #endregion
+    #endregion*/
 
     #region Used for creating other buildings
     [HarmonyPatch(typeof(Designator_Build), "ProcessInput")]

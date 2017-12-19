@@ -8,9 +8,6 @@ namespace InfiniteStorage
 {
     class BuildingUtil
     {
-        public const int MAX_STACK_SIZE = 750000;
-        private const int MAX_ITERATIONS = MAX_STACK_SIZE / 75;
-
         public static IEnumerable<Thing> FindThingsOfTypeNextTo(Map map, IntVec3 position, int distance)
         {
             int minX = Math.Max(0, position.x - distance);
