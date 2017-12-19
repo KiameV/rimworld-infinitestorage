@@ -8,6 +8,7 @@ namespace InfiniteStorage
     {
         [Unsaved]
         private static readonly LinkedList<Building_InfiniteStorage> thingStorages = new LinkedList<Building_InfiniteStorage>();
+
         public static IEnumerable<Building_InfiniteStorage> InfiniteStorages { get { return thingStorages; } }
         public static bool HasInfiniteStorages { get { return thingStorages.Count > 0; } }
 
@@ -16,14 +17,14 @@ namespace InfiniteStorage
             thingStorages.Clear();
         }
 
-        public static void Add(Building_InfiniteStorage bps)
+        public static void Add(Building_InfiniteStorage storage)
         {
-            if (!thingStorages.Contains(bps))
+            if (!thingStorages.Contains(storage))
             {
-                thingStorages.AddLast(bps);
+                thingStorages.AddLast(storage);
             }
         }
 
-        public static void Remove(Building_InfiniteStorage bps) { thingStorages.Remove(bps); }
+        public static void Remove(Building_InfiniteStorage storage) { thingStorages.Remove(storage); }
     }
 }

@@ -76,21 +76,27 @@ namespace InfiniteStorage.UI
                 {
                     if (thing != null)
                     {
-                        if (this.DrawRow(thing, r, i))
-                            break;
-                        ++i;
-                    }
-                }
-                foreach (MinifiedThing thing in this.ThingStorage.StoredMinifiedThings)
-                {
-                    if (thing != null)
-                    {
-                        if (this.DrawRow(thing, r, i))
-                            break;
-                        ++i;
-                    }
-                }
+                        GUI.BeginGroup(new Rect(0, 22 + i * (HEIGHT + BUFFER), r.width, HEIGHT));
 
+                        Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
+
+                        Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), thing.Label);
+
+                        if (this.ThingStorage.IsOperational &&
+                            Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
+                        {
+                            this.ThingStorage.AllowAdds = false;
+                            Thing removed;
+                            if (this.ThingStorage.TryRemove(thing, thing.stackCount, out removed))
+                            {
+                                BuildingUtil.DropThing(removed, removed.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
+                            }
+                            break;
+                        }
+                        GUI.EndGroup();
+                        ++i;
+                    }
+                }
                 GUI.EndScrollView();
             }
             catch (Exception e)
@@ -105,34 +111,6 @@ namespace InfiniteStorage.UI
                 Text.Anchor = TextAnchor.UpperLeft;
                 GUI.color = Color.white;
             }
-        }
-
-        private bool DrawRow(Thing thing, Rect r, int i)
-        {
-            GUI.BeginGroup(new Rect(0, 22 + i * (HEIGHT + BUFFER), r.width, HEIGHT));
-
-            Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
-
-            Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), thing.Label);
-
-            if (this.ThingStorage.IsOperational &&
-                Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
-            {
-                this.ThingStorage.AllowAdds = false;
-                if (thing is MinifiedThing)
-                {
-                    this.ThingStorage.Remove((MinifiedThing)thing);
-                    BuildingUtil.DropSingleThing(thing, this.ThingStorage, this.ThingStorage.Map, false);
-                }
-                else
-                {
-                    Thing removed = this.ThingStorage.Remove(thing, thing.stackCount);
-                    BuildingUtil.DropThing(removed, removed.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
-                }
-                return true;
-            }
-            GUI.EndGroup();
-            return false;
         }
     }
 }

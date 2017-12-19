@@ -12,15 +12,13 @@ namespace InfiniteStorage
 {
     public class Building_InfiniteStorage : Building_Storage
     {
-        private SortedDictionary<string, Thing> storedThings = new SortedDictionary<string, Thing>();
-        private SortedDictionary<string, LinkedList<MinifiedThing>> storedMinifiedThings = new SortedDictionary<string, LinkedList<MinifiedThing>>();
-        public IEnumerable<Thing> StoredThings { get { return this.storedThings.Values; } }
-        public IEnumerable<MinifiedThing> StoredMinifiedThings
+        private SortedDictionary<string, LinkedList<Thing>> storedThings = new SortedDictionary<string, LinkedList<Thing>>();
+        public IEnumerable<Thing> StoredThings
         {
             get
             {
-                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
-                    foreach (MinifiedThing t in l)
+                foreach (LinkedList<Thing> l in this.storedThings.Values)
+                    foreach (Thing t in l)
                         yield return t;
             }
         }
@@ -28,8 +26,8 @@ namespace InfiniteStorage
         {
             get
             {
-                int count = this.storedThings.Count;
-                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
+                int count = 0;
+                foreach (LinkedList<Thing> l in this.storedThings.Values)
                     count += l.Count;
                 return count;
             }
@@ -47,6 +45,8 @@ namespace InfiniteStorage
         public bool IsOperational { get { return this.compPowerTrader == null || this.compPowerTrader.PowerOn; } }
 
         private long lastAutoReclaim = 0;
+
+        private List<Thing> ToDumpOnSpawn = null;
 
         [Unsaved]
         private float storedCount = 0;
@@ -73,6 +73,16 @@ namespace InfiniteStorage
             WorldComp.Add(this);
 
             this.compPowerTrader = this.GetComp<CompPowerTrader>();
+
+            if (this.ToDumpOnSpawn != null)
+            {
+                foreach (Thing t in this.ToDumpOnSpawn)
+                {
+                    BuildingUtil.DropThing(t, this, this.Map, false);
+                }
+                this.ToDumpOnSpawn.Clear();
+                this.ToDumpOnSpawn = null;
+            }
         }
 
         public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
@@ -112,23 +122,14 @@ namespace InfiniteStorage
             try
             {
                 this.AllowAdds = false;
-                foreach (Thing t in this.storedThings.Values)
+                foreach (LinkedList<Thing> l in this.storedThings.Values)
                 {
-                    if (t.stackCount > 0)
+                    foreach (Thing t in l)
                     {
                         BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false);
                     }
-                }
-                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
-                {
-                    foreach (MinifiedThing t in l)
-                    {
-                        BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false);
-                    }
-                    l.Clear();
                 }
                 this.storedThings.Clear();
-                this.storedMinifiedThings.Clear();
             }
             catch (Exception e)
             {
@@ -153,31 +154,20 @@ namespace InfiniteStorage
             try
             {
                 this.AllowAdds = false;
-                foreach (Thing t in this.storedThings.Values)
+                foreach (LinkedList<Thing> l in this.storedThings.Values)
                 {
-                    if (t.stackCount > 0)
+                    foreach (Thing t in l)
                     {
                         BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false, droppedThings);
                     }
 #if DEBUG
                     else
-                    {
                         Log.Message("Empty " + t.Label + " has 0 stack count");
-                    }
 #endif
-                }
-                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
-                {
-                    foreach (MinifiedThing t in l)
-                    {
-                        BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false, droppedThings);
-                    }
-                    l.Clear();
                 }
                 this.storedCount = 0;
                 this.storedWeight = 0;
                 this.storedThings.Clear();
-                this.storedMinifiedThings.Clear();
             }
             finally
             {
@@ -189,19 +179,25 @@ namespace InfiniteStorage
         {
             if (this.IsOperational)
             {
-                this.Add(BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1));
-                lastAutoReclaim = DateTime.Now.Ticks;
+                foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
+                {
+                    this.Add(t);
+                }
             }
         }
 
         public int StoredThingCount(ThingDef def)
         {
-            Thing t;
-            if (this.storedThings.TryGetValue(def.label, out t))
+            int count = 0;
+            LinkedList<Thing> l;
+            if (this.storedThings.TryGetValue(def.label, out l))
             {
-                return t.stackCount;
+                foreach (Thing t in l)
+                {
+                    count += t.stackCount;
+                }
             }
-            return 0;
+            return count;
         }
 
         public override void Notify_ReceivedThing(Thing newItem)
@@ -216,18 +212,7 @@ namespace InfiniteStorage
             }
         }
 
-        internal void Add(IEnumerable<Thing> things)
-        {
-            if (things == null)
-                return;
-
-            foreach (Thing t in things)
-            {
-                this.Add(t);
-            }
-        }
-
-        internal bool Add(Thing thing)
+        public bool Add(Thing thing)
         {
             if (thing == null ||
                 !base.settings.AllowedToAccept(thing) ||
@@ -250,53 +235,106 @@ namespace InfiniteStorage
             }
 
             int thingsAdded = thing.stackCount;
-            if (thing is MinifiedThing)
+            LinkedList<Thing> l;
+            if (this.storedThings.TryGetValue(thing.def.label, out l))
             {
-                LinkedList<MinifiedThing> l;
-                if (!storedMinifiedThings.TryGetValue(thing.def.label, out l))
+                bool absorbed = false;
+                foreach (Thing t in l)
                 {
-                    l = new LinkedList<MinifiedThing>();
-                    this.storedMinifiedThings.Add(thing.def.label, l);
+                    if (t.TryAbsorbStack(thing, false))
+                    {
+                        absorbed = true;
+                    }
                 }
-                if (!l.Contains((MinifiedThing)thing))
+
+                if (!absorbed)
                 {
-                    l.AddLast((MinifiedThing)thing);
+                    l.AddLast(thing);
                 }
             }
             else
             {
-                Thing t;
-                if (this.storedThings.TryGetValue(thing.def.label, out t))
-                {
-                    if (!t.TryAbsorbStack(thing, false))
-                    {
-                        Log.Warning("Unable to add " + thing.Label);
-                        thingsAdded = thingsAdded - thing.stackCount;
-                        this.DropThing(thing, false);
-                    }
-                }
-                else
-                {
-                    this.storedThings.Add(thing.def.label, thing);
-                }
+                l = new LinkedList<Thing>();
+                l.AddFirst(thing);
+                this.storedThings.Add(thing.def.label, l);
             }
             this.UpdateStoredStats(thing, thingsAdded);
             return true;
         }
 
+        public bool TryGetFilteredThings(ThingFilter filter, out List<Thing> gotten)
+        {
+            gotten = null;
+            foreach (LinkedList<Thing> l in this.storedThings.Values)
+            {
+                foreach (Thing t in l)
+                {
+                    if (filter.Allows(t))
+                    {
+                        if (gotten == null)
+                        {
+                            gotten = new List<Thing>();
+                        }
+                        gotten.Add(t);
+                    }
+                }
+            }
+            return gotten != null;
+        }
+
         public bool TryGetValue(ThingDef def, out Thing t)
         {
-            return this.storedThings.TryGetValue(def.label, out t);
+            LinkedList<Thing> l;
+            if (this.storedThings.TryGetValue(def.label, out l))
+            {
+                if (l.Count > 0)
+                {
+                    t = l.First.Value;
+                    return true;
+                }
+            }
+            t = null;
+            return false;
         }
 
         public bool TryRemove(ThingFilter filter, out Thing removed)
         {
-            foreach (Thing t in this.storedThings.Values)
+            foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
-                if (filter.Allows(t.def))
+                if (l.Count > 0 &&
+                    filter.Allows(l.First.Value.def))
                 {
+                    Thing t = l.First.Value;
                     int count = Math.Min(t.stackCount, t.def.stackLimit);
-                    removed = this.Remove(t, count);
+                    return this.TryRemove(t, count, out removed);
+                }
+            }
+            removed = null;
+            return false;
+        }
+
+        public bool TryRemove(Thing thing, int count, out Thing removed)
+        {
+            LinkedList<Thing> l;
+            if (this.storedThings.TryGetValue(thing.def.label, out l))
+            {
+                if (l.Count > 0)
+                {
+                    removed = l.First.Value;
+                    if (removed.stackCount <= count)
+                    {
+                        count = removed.stackCount;
+                        l.RemoveFirst();
+                        if (l.Count == 0)
+                        {
+                            this.storedThings.Remove(thing.def.label);
+                        }
+                    }
+                    else
+                    {
+                        removed = removed.SplitOff(count);
+                    }
+                    this.UpdateStoredStats(removed, -1 * count);
                     return true;
                 }
             }
@@ -304,56 +342,24 @@ namespace InfiniteStorage
             return false;
         }
 
-        public Thing Remove(Thing thing, int count)
-        {
-            Thing t;
-            if (this.storedThings.TryGetValue(thing.def.label, out t))
-            {
-                if (t.stackCount <= count)
-                {
-                    count = t.stackCount;
-                    if (!this.storedThings.Remove(t.def.label))
-                    {
-                        Log.Error("Unable to remove " + t.Label + " count " + count);
-                        return null;
-                    }
-                }
-                else
-                {
-                    t = t.SplitOff(count);
-                }
-
-                this.UpdateStoredStats(t, count);
-            }
-            return t;
-        }
-
-        public bool Remove(MinifiedThing thing)
-        {
-            LinkedList<MinifiedThing> l;
-            if (this.storedMinifiedThings.TryGetValue(thing.def.label, out l))
-            {
-                if (l.Remove(thing))
-                {
-                    this.UpdateStoredStats(thing, 1);
-                    return true;
-                }
-            }
-            return false;
-        }
-
+        //const int MAX_COUNT_BEFORE_RECALC = 30;
+        //int countSinceLastUpdate = 0;
         private void UpdateStoredStats(Thing thing, int count, bool force = false)
         {
             this.storedCount += count;
             this.storedWeight += thing.GetStatValue(StatDefOf.Mass, true) * count;
-
-            if (this.storedWeight < 0)
+            //++countSinceLastUpdate;
+            if (this.storedWeight < 0)// || MAX_COUNT_BEFORE_RECALC < countSinceLastUpdate)
             {
+                //countSinceLastUpdate = 0;
                 this.storedCount = 0;
                 this.storedWeight = 0;
-                foreach (Thing t in this.storedThings.Values)
+                foreach (LinkedList<Thing> l in this.storedThings.Values)
                 {
-                    this.UpdateStoredStats(thing, count, true);
+                    foreach (Thing t in l)
+                    {
+                        this.UpdateStoredStats(thing, count, true);
+                    }
                 }
             }
         }
@@ -391,13 +397,9 @@ namespace InfiniteStorage
             if (Scribe.mode == LoadSaveMode.Saving)
             {
                 this.temp = new List<Thing>();
-                foreach (Thing t in this.storedThings.Values)
+                foreach (LinkedList<Thing> l in this.storedThings.Values)
                 {
-                    this.temp.Add(t);
-                }
-                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
-                {
-                    foreach (MinifiedThing t in l)
+                    foreach (Thing t in l)
                     {
                         this.temp.Add(t);
                     }
@@ -413,7 +415,17 @@ namespace InfiniteStorage
 
                 if (this.temp != null)
                 {
-                    this.Add(this.temp);
+                    foreach (Thing t in this.temp)
+                    {
+                        if (!this.Add(t))
+                        {
+                            if (this.ToDumpOnSpawn == null)
+                            {
+                                this.ToDumpOnSpawn = new List<Thing>();
+                            }
+                            this.ToDumpOnSpawn.Add(t);
+                        }
+                    }
                 }
                 this.temp.Clear();
                 this.temp = null;
@@ -433,7 +445,7 @@ namespace InfiniteStorage
             {
                 sb.Append("InfiniteStorage.StoredWeight".Translate());
                 sb.Append(": ");
-                sb.Append(this.storedWeight);
+                sb.Append(this.storedWeight.ToString("N1"));
             }
             else
             {
@@ -459,10 +471,12 @@ namespace InfiniteStorage
                 this.compPowerTrader.PowerOutput = -1 * Settings.EnergyFactor * this.storedWeight;
             }
 
+            long now = DateTime.Now.Ticks;
             if (Settings.CollectThingsAutomatically && 
-                DateTime.Now.Ticks - lastAutoReclaim > Settings.TimeBetweenAutoCollectsTicks)
+                now - this.lastAutoReclaim > Settings.TimeBetweenAutoCollectsTicks)
             {
                 this.Reclaim(true);
+                this.lastAutoReclaim = now;
             }
         }
 
@@ -526,6 +540,17 @@ namespace InfiniteStorage
             });
             ++key;
 
+            l.Add(new Command_Action
+            {
+                //icon = ViewUI.applyFilters,
+                defaultDesc = "InfiniteStorage.ApplyFiltersDesc".Translate(),
+                defaultLabel = "InfiniteStorage.ApplyFilters".Translate(),
+                activateSound = SoundDef.Named("Click"),
+                action = delegate { this.ApplyFilters(); },
+                groupKey = key
+            });
+            ++key;
+
             return SaveStorageSettingsUtil.SaveStorageSettingsGizmoUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
         }
 
@@ -569,40 +594,46 @@ namespace InfiniteStorage
 #endregion
 
 #region ThingFilters
-        private ThingFilter previousStorageFilters = new ThingFilter();
-        private FieldInfo AllowedDefsFI = typeof(ThingFilter).GetField("allowedDefs", BindingFlags.Instance | BindingFlags.NonPublic);
-        protected bool AreStorageSettingsEqual()
+        public void ApplyFilters()
         {
-            ThingFilter currentFilters = base.settings.filter;
-            if (currentFilters.AllowedDefCount != this.previousStorageFilters.AllowedDefCount ||
-                currentFilters.AllowedQualityLevels != this.previousStorageFilters.AllowedQualityLevels ||
-                currentFilters.AllowedHitPointsPercents != this.previousStorageFilters.AllowedHitPointsPercents)
+            List<Thing> removed = new List<Thing>();
+            List<string> keysToRemove = new List<string>();
+            foreach (KeyValuePair<string, LinkedList<Thing>> kv in this.storedThings)
             {
-                return false;
-            }
-
-            HashSet<ThingDef> currentAllowed = AllowedDefsFI.GetValue(currentFilters) as HashSet<ThingDef>;
-            foreach (ThingDef previousAllowed in AllowedDefsFI.GetValue(this.previousStorageFilters) as HashSet<ThingDef>)
-            {
-                if (!currentAllowed.Contains(previousAllowed))
+                LinkedList<Thing> l = kv.Value;
+                if (l.Count > 0)
                 {
-                    return false;
+                    LinkedListNode<Thing> n = l.First;
+                    while (n != null)
+                    {
+                        var next = n.Next;
+                        if (!this.settings.AllowedToAccept(n.Value))
+                        {
+                            removed.Add(n.Value);
+                            l.Remove(n);
+                        }
+                        n = next;
+                    }
+                }
+                if (l.Count == 0)
+                {
+                    keysToRemove.Add(kv.Key);
                 }
             }
+            
+            foreach (string key in keysToRemove)
+            {
+                this.storedThings.Remove(key);
+            }
+            keysToRemove.Clear();
+            keysToRemove = null;
 
-            return true;
-        }
-
-        private void UpdatePreviousStorageFilter()
-        {
-            ThingFilter currentFilters = base.settings.filter;
-
-            this.previousStorageFilters.AllowedHitPointsPercents = currentFilters.AllowedHitPointsPercents;
-            this.previousStorageFilters.AllowedQualityLevels = currentFilters.AllowedQualityLevels;
-
-            HashSet<ThingDef> previousAllowed = AllowedDefsFI.GetValue(this.previousStorageFilters) as HashSet<ThingDef>;
-            previousAllowed.Clear();
-            previousAllowed.AddRange(AllowedDefsFI.GetValue(currentFilters) as HashSet<ThingDef>);
+            foreach (Thing t in removed)
+            {
+                BuildingUtil.DropThing(t, this, this.CurrentMap, false);
+            }
+            removed.Clear();
+            removed = null;
         }
         #endregion
     }

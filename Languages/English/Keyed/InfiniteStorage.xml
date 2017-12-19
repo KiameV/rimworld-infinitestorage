@@ -10,6 +10,8 @@
 	<InfiniteStorage.CollectDesc>Collect the things around the storage and store it.</InfiniteStorage.CollectDesc>
 	<InfiniteStorage.IncludeInTradeDeals>Sell Stored Things</InfiniteStorage.IncludeInTradeDeals>
 	<InfiniteStorage.IncludeInTradeDealsDesc>Toggle whether to include the stored things in trade deals.</InfiniteStorage.IncludeInTradeDealsDesc>
+	<InfiniteStorage.ApplyFilters>Apply Filters</InfiniteStorage.ApplyFilters>
+	<InfiniteStorage.ApplyFiltersDesc>Filter stored items.</InfiniteStorage.ApplyFiltersDesc>
 	
 	<InfiniteStorage.View>View Storage</InfiniteStorage.View>
 	<InfiniteStorage.ViewDesc>View the items stored.</InfiniteStorage.ViewDesc>
