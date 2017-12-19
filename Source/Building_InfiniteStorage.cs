@@ -13,8 +13,27 @@ namespace InfiniteStorage
     public class Building_InfiniteStorage : Building_Storage
     {
         private SortedDictionary<string, Thing> storedThings = new SortedDictionary<string, Thing>();
+        private SortedDictionary<string, LinkedList<MinifiedThing>> storedMinifiedThings = new SortedDictionary<string, LinkedList<MinifiedThing>>();
         public IEnumerable<Thing> StoredThings { get { return this.storedThings.Values; } }
-        public int DefsCount { get { return this.storedThings.Count; } }
+        public IEnumerable<MinifiedThing> StoredMinifiedThings
+        {
+            get
+            {
+                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
+                    foreach (MinifiedThing t in l)
+                        yield return t;
+            }
+        }
+        public int DefsCount
+        {
+            get
+            {
+                int count = this.storedThings.Count;
+                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
+                    count += l.Count;
+                return count;
+            }
+        }
 
         public bool AllowAdds { get; set; }
 
@@ -92,14 +111,7 @@ namespace InfiniteStorage
         {
             try
             {
-                if (this.storedThings != null)
-                {
-                    foreach (Thing t in this.storedThings.Values)
-                    {
-                        this.DropThing(t, true);
-                    }
-                    this.storedThings.Clear();
-                }
+                this.Empty();
             }
             catch (Exception e)
             {
@@ -137,9 +149,18 @@ namespace InfiniteStorage
                     }
 #endif
                 }
+                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
+                {
+                    foreach (MinifiedThing t in l)
+                    {
+                        BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false, droppedThings);
+                    }
+                    l.Clear();
+                }
                 this.storedCount = 0;
                 this.storedWeight = 0;
                 this.storedThings.Clear();
+                this.storedMinifiedThings.Clear();
             }
             finally
             {
@@ -191,8 +212,8 @@ namespace InfiniteStorage
 
         internal bool Add(Thing thing)
         {
-            if (thing == null || 
-                !base.settings.AllowedToAccept(thing) || 
+            if (thing == null ||
+                !base.settings.AllowedToAccept(thing) ||
                 !this.IsOperational)
             {
                 return false;
@@ -211,20 +232,36 @@ namespace InfiniteStorage
                 thing.DeSpawn();
             }
 
-            Thing t;
             int thingsAdded = thing.stackCount;
-            if (this.storedThings.TryGetValue(thing.def.label, out t))
+            if (thing is MinifiedThing)
             {
-                if (!t.TryAbsorbStack(thing, false))
+                LinkedList<MinifiedThing> l;
+                if (!storedMinifiedThings.TryGetValue(thing.def.label, out l))
                 {
-                    Log.Warning("Unable to add " + thing.Label);
-                    thingsAdded = thingsAdded - thing.stackCount;
-                    this.DropThing(thing, false);
+                    l = new LinkedList<MinifiedThing>();
+                    this.storedMinifiedThings.Add(thing.def.label, l);
+                }
+                if (!l.Contains((MinifiedThing)thing))
+                {
+                    l.AddLast((MinifiedThing)thing);
                 }
             }
             else
             {
-                this.storedThings.Add(thing.def.label, thing);
+                Thing t;
+                if (this.storedThings.TryGetValue(thing.def.label, out t))
+                {
+                    if (!t.TryAbsorbStack(thing, false))
+                    {
+                        Log.Warning("Unable to add " + thing.Label);
+                        thingsAdded = thingsAdded - thing.stackCount;
+                        this.DropThing(thing, false);
+                    }
+                }
+                else
+                {
+                    this.storedThings.Add(thing.def.label, thing);
+                }
             }
             this.UpdateStoredStats(thing, thingsAdded);
             return true;
@@ -258,7 +295,11 @@ namespace InfiniteStorage
                 if (t.stackCount <= count)
                 {
                     count = t.stackCount;
-                    this.storedThings.Remove(t.def.label);
+                    if (!this.storedThings.Remove(t.def.label))
+                    {
+                        Log.Error("Unable to remove " + t.Label + " count " + count);
+                        return null;
+                    }
                 }
                 else
                 {
@@ -268,6 +309,20 @@ namespace InfiniteStorage
                 this.UpdateStoredStats(t, count);
             }
             return t;
+        }
+
+        public bool Remove(MinifiedThing thing)
+        {
+            LinkedList<MinifiedThing> l;
+            if (this.storedMinifiedThings.TryGetValue(thing.def.label, out l))
+            {
+                if (l.Remove(thing))
+                {
+                    this.UpdateStoredStats(thing, 1);
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void UpdateStoredStats(Thing thing, int count, bool force = false)
@@ -322,6 +377,13 @@ namespace InfiniteStorage
                 foreach (Thing t in this.storedThings.Values)
                 {
                     this.temp.Add(t);
+                }
+                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
+                {
+                    foreach (MinifiedThing t in l)
+                    {
+                        this.temp.Add(t);
+                    }
                 }
             }
 

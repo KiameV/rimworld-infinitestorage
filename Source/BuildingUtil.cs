@@ -136,10 +136,11 @@ namespace InfiniteStorage
             }
         }
 
-        public static void DropSingleThing(Thing toDrop, Building from, Map map, bool makeForbidden)
+        public static void DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden)
         {
             try
             {
+                from.AllowAdds = false;
                 Thing t;
                 if (!toDrop.Spawned)
                 {
@@ -171,6 +172,10 @@ namespace InfiniteStorage
                     typeof(BuildingUtil).Name + ".DropApparel\n" +
                     e.GetType().Name + " " + e.Message + "\n" +
                     e.StackTrace);
+            }
+            finally
+            {
+                from.AllowAdds = true;
             }
         }
     }
