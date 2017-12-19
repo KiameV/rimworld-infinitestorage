@@ -111,7 +111,24 @@ namespace InfiniteStorage
         {
             try
             {
-                this.Empty();
+                this.AllowAdds = false;
+                foreach (Thing t in this.storedThings.Values)
+                {
+                    if (t.stackCount > 0)
+                    {
+                        BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false);
+                    }
+                }
+                foreach (LinkedList<MinifiedThing> l in this.storedMinifiedThings.Values)
+                {
+                    foreach (MinifiedThing t in l)
+                    {
+                        BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false);
+                    }
+                    l.Clear();
+                }
+                this.storedThings.Clear();
+                this.storedMinifiedThings.Clear();
             }
             catch (Exception e)
             {

@@ -69,7 +69,7 @@ namespace InfiniteStorage.UI
             {
                 int rows = this.ThingStorage.DefsCount;
                 Rect r = new Rect(0, 20, 384, (rows + 1) * (HEIGHT + BUFFER));
-                scrollPosition = GUI.BeginScrollView(new Rect(50, 0, 400, 600), scrollPosition, r);
+                scrollPosition = GUI.BeginScrollView(new Rect(50, 0, 400, 500), scrollPosition, r);
 
                 int i = 0;
                 foreach (Thing thing in this.ThingStorage.StoredThings)
@@ -113,7 +113,7 @@ namespace InfiniteStorage.UI
 
             Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
 
-            Widgets.Label(new Rect(40, 0, 200, HEIGHT), thing.Label);
+            Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), thing.Label);
 
             if (this.ThingStorage.IsOperational &&
                 Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
