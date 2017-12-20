@@ -9,6 +9,8 @@
   <InfiniteStorage.CollectDesc>收集并存储散落在存储箱周围的物品。</InfiniteStorage.CollectDesc>
   <InfiniteStorage.IncludeInTradeDeals>出售</InfiniteStorage.IncludeInTradeDeals>
   <InfiniteStorage.IncludeInTradeDealsDesc>切换，是否让已存储的物品出现在贸易目录里。</InfiniteStorage.IncludeInTradeDealsDesc>
+  <InfiniteStorage.ApplyFilters>应用过滤器</InfiniteStorage.ApplyFilters>
+  <InfiniteStorage.ApplyFiltersDesc>过滤已存储的物品（将不符合存储过滤器的物品放到地上）。</InfiniteStorage.ApplyFiltersDesc>
   <InfiniteStorage.View>查看库存</InfiniteStorage.View>
   <InfiniteStorage.ViewDesc>查看已存储的物品。</InfiniteStorage.ViewDesc>
   <!-- Settings Page -->
