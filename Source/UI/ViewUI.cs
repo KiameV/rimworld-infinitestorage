@@ -2,7 +2,6 @@
 using UnityEngine;
 using Verse;
 using System;
-using System.Collections.Generic;
 
 namespace InfiniteStorage.UI
 {
@@ -33,6 +32,9 @@ namespace InfiniteStorage.UI
         public static Texture2D noSellTexture;
 
         private Vector2 scrollPosition = new Vector2(0, 0);
+
+        const int HEIGHT = 30;
+        const int BUFFER = 2;
 
         public ViewUI(Building_InfiniteStorage thingStorage)
         {
@@ -65,11 +67,9 @@ namespace InfiniteStorage.UI
             Text.Font = GameFont.Small;
             try
             {
-                const int HEIGHT = 30;
-                const int BUFFER = 2;
                 int rows = this.ThingStorage.DefsCount;
                 Rect r = new Rect(0, 20, 384, (rows + 1) * (HEIGHT + BUFFER));
-                scrollPosition = GUI.BeginScrollView(new Rect(50, 0, 400, 400), scrollPosition, r);
+                scrollPosition = GUI.BeginScrollView(new Rect(50, 0, 400, 500), scrollPosition, r);
 
                 int i = 0;
                 foreach (Thing thing in this.ThingStorage.StoredThings)
@@ -80,20 +80,23 @@ namespace InfiniteStorage.UI
 
                         Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
 
-                        Widgets.Label(new Rect(40, 0, 200, HEIGHT), thing.Label);
+                        Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), thing.Label);
 
                         if (this.ThingStorage.IsOperational &&
                             Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
                         {
-                            Thing removed = this.ThingStorage.Remove(thing, thing.stackCount);
-                            BuildingUtil.DropThing(removed, removed.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
+                            this.ThingStorage.AllowAdds = false;
+                            Thing removed;
+                            if (this.ThingStorage.TryRemove(thing, thing.stackCount, out removed))
+                            {
+                                BuildingUtil.DropThing(removed, removed.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
+                            }
                             break;
                         }
                         GUI.EndGroup();
                         ++i;
                     }
                 }
-
                 GUI.EndScrollView();
             }
             catch (Exception e)

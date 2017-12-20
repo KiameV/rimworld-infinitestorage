@@ -8,9 +8,6 @@ namespace InfiniteStorage
 {
     class BuildingUtil
     {
-        public const int MAX_STACK_SIZE = 750000;
-        private const int MAX_ITERATIONS = MAX_STACK_SIZE / 75;
-
         public static IEnumerable<Thing> FindThingsOfTypeNextTo(Map map, IntVec3 position, int distance)
         {
             int minX = Math.Max(0, position.x - distance);
@@ -139,10 +136,11 @@ namespace InfiniteStorage
             }
         }
 
-        public static void DropSingleThing(Thing toDrop, Building from, Map map, bool makeForbidden)
+        public static void DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden)
         {
             try
             {
+                from.AllowAdds = false;
                 Thing t;
                 if (!toDrop.Spawned)
                 {
@@ -174,6 +172,10 @@ namespace InfiniteStorage
                     typeof(BuildingUtil).Name + ".DropApparel\n" +
                     e.GetType().Name + " " + e.Message + "\n" +
                     e.StackTrace);
+            }
+            finally
+            {
+                from.AllowAdds = true;
             }
         }
     }

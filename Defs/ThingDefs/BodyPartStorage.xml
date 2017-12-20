@@ -74,5 +74,6 @@
 				<GizmoViewTexture>viewbodyparts</GizmoViewTexture>
 			</li>
 		</modExtensions>
+		<tickerType>Rare</tickerType>
 	</ThingDef>
 </Defs>

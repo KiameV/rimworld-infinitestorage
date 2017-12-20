@@ -103,27 +103,6 @@ namespace InfiniteStorage
     }
     #endregion
 
-    #region For right click hauling
-    [HarmonyPatch(typeof(StoreUtility), "TryFindBestBetterStoreCellFor")]
-    static class Patch_StoreUtility_TryFindBestBetterStoreCellFor
-    {
-        static void Postfix(ref bool __result, Thing t, Pawn carrier, Map map, StoragePriority currentPriority, Faction faction, ref IntVec3 foundCell, bool needAccurateResult)
-        {
-            foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
-            {
-                if (storage.IsOperational &&
-                    storage.settings.Priority > currentPriority &&
-                    storage.settings.AllowedToAccept(t))
-                {
-                    currentPriority = storage.settings.Priority;
-                    foundCell = storage.Position;
-                    __result = true;
-                }
-            }
-        }
-    }
-    #endregion
-
     #region Used for creating other buildings
     [HarmonyPatch(typeof(Designator_Build), "ProcessInput")]
     static class Patch_Designator_Build_ProcessInput
@@ -203,216 +182,9 @@ namespace InfiniteStorage
             return false;
         }
     }
-    /*    [HarmonyPatch(typeof(Messages), "Message", new Type[] { typeof(string), typeof(MessageTypeDef) })]
-        static class Patch_Messages_Message
-        {
-            internal static bool PreventMessages = false;
-            static bool Prefix()
-            {
-                return !PreventMessages;
-            }
-        }
-
-        [HarmonyPatch(typeof(WindowStack), "Add")]
-        static class Patch_WindowStack_Add
-        {
-            internal static bool PreventAdd = false;
-            internal static List<FloatMenuOption> FloatMenuOptions = null;
-            static bool Prefix(Window window)
-            {
-                if (PreventAdd && window != null && window is FloatMenu)
-                {
-                    FloatMenuOptions = typeof(FloatMenu).GetField("options", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(window) as List<FloatMenuOption>;
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(Designator_Build), "ProcessInput")]
-        static class Patch_Designator_Build_ProcessInput
-        {
-            private static FieldInfo entDefFI = null;
-            private static FieldInfo stuffDefFI = null;
-            private static FieldInfo writeStuffFI = null;
-
-            static void Prefix()
-            {
-                if (WorldComp.HasInfiniteStorages)
-                {
-                    Patch_Messages_Message.PreventMessages = true;
-                    Patch_WindowStack_Add.PreventAdd = true;
-                }
-            }
-
-            static void Postfix(Designator_Build __instance, Event ev)
-            {
-                if (!WorldComp.HasInfiniteStorages)
-                    return;
-
-                Patch_Messages_Message.PreventMessages = false;
-                Patch_WindowStack_Add.PreventAdd = false;
-
-                if (entDefFI == null)
-                {
-                    entDefFI = typeof(Designator_Build).GetField("entDef", BindingFlags.NonPublic | BindingFlags.Instance);
-                    stuffDefFI = typeof(Designator_Build).GetField("stuffDef", BindingFlags.NonPublic | BindingFlags.Instance);
-                    writeStuffFI = typeof(Designator_Build).GetField("writeStuff", BindingFlags.NonPublic | BindingFlags.Instance);
-                }
-
-                Map map = Find.VisibleMap;
-                ThingDef thingDef = entDefFI.GetValue(__instance) as ThingDef;
-                List<FloatMenuOption> list = new List<FloatMenuOption>();
-                if (Patch_WindowStack_Add.FloatMenuOptions != null)
-                {
-                    list.AddRange(Patch_WindowStack_Add.FloatMenuOptions);
-                    Patch_WindowStack_Add.FloatMenuOptions.Clear();
-                }
-
-                foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
-                {
-                    if (storage.Map != map || !storage.Spawned || !storage.IsOperational)
-                        continue;
-
-                    foreach (Thing t in storage.StoredThings)
-                    {
-                        try
-                        {
-                            ThingDef tDef = t.def;
-                            if (tDef.IsStuff &&
-                                tDef.stuffProps.CanMake(thingDef) &&
-                                (DebugSettings.godMode || t.stackCount > 0))
-                            {
-                                string labelCap = tDef.LabelCap;
-                                list.Add(new FloatMenuOption(labelCap, delegate
-                                {
-                                    __instance.ProcessInput(ev);
-                                    Find.DesignatorManager.Select(__instance);
-                                    stuffDefFI.SetValue(__instance, tDef);
-                                    writeStuffFI.SetValue(__instance, true);
-                                }, MenuOptionPriority.Default, null, null, 0f, null, null));
-                            }
-                        }
-                        catch
-                        {
-    #if DEBUG
-                            Log.Error("t: " + t.Label + " To Build: " + thingDef.defName);
-    #endif
-                        }
-                    }
-                }
-
-                if (list.Count == 0)
-                {
-                    Messages.Message("NoStuffsToBuildWith".Translate(), MessageTypeDefOf.RejectInput);
-                }
-                else
-                {
-                    FloatMenu floatMenu = new FloatMenu(list);
-                    floatMenu.vanishIfMouseDistant = true;
-                    Find.WindowStack.Add(floatMenu);
-                    Find.DesignatorManager.Select(__instance);
-                }
-            }
-
-            private static bool CanMake(ThingDef mat, ThingDef toMake)
-            {
-                Log.Error("CanMake: mat is null [" + (mat == null).ToString() + "] toMake is null [" + (toMake == null).ToString() + "]");
-                Log.Warning("    mat: " + mat.label + " has stuff cats: " + (mat.stuffCategories != null).ToString() + " count: " + ((mat.stuffCategories != null) ? mat.stuffCategories.Count.ToString() : "null").ToString());
-                Log.Warning("    toMake: " + toMake.label + " has stuff cats: " + (toMake.stuffCategories != null).ToString() + " count: " + ((toMake.stuffCategories != null) ? mat.stuffCategories.Count.ToString() : "null").ToString());
-                foreach (StuffCategoryDef matStuffDef in mat.stuffCategories)
-                {
-                    Log.Error("        matStuffDef: " + matStuffDef.defName);
-                    foreach (StuffCategoryDef toMakeStuffDef in toMake.stuffCategories)
-                    {
-                        Log.Error("            toMakeStuffDef: " + toMakeStuffDef.defName);
-                        if (matStuffDef == toMakeStuffDef)
-                        {
-                            Log.Error("Match");
-                            return true;
-                        }
-                    }
-                }
-                Log.Error("No Match");
-                return false;
-            }
-        }*/
-    /*private static FieldInfo entDefFI = null;
-    private static FieldInfo stuffDefFI = null;
-    private static FieldInfo writeStuffFI = null;
-    static bool Prefix(Designator_Build __instance, Event ev)
-    {
-        if (entDefFI == null)
-        {
-            entDefFI = typeof(Designator_Build).GetField("entDef", BindingFlags.NonPublic | BindingFlags.Instance);
-            stuffDefFI = typeof(Designator_Build).GetField("stuffDef", BindingFlags.NonPublic | BindingFlags.Instance);
-            writeStuffFI = typeof(Designator_Build).GetField("writeStuff", BindingFlags.NonPublic | BindingFlags.Instance);
-        }
-
-        ThingDef thingDef = entDefFI.GetValue(__instance) as ThingDef;
-        if (thingDef == null || !thingDef.MadeFromStuff || !WorldComp.HasInfiniteStorages)
-        {
-            return true;
-        }
-
-        Map map = Find.VisibleMap;
-        List<FloatMenuOption> list = new List<FloatMenuOption>();
-
-        foreach (ThingDef current in map.resourceCounter.AllCountedAmounts.Keys)
-        {
-            if (current.IsStuff && current.stuffProps.CanMake(thingDef) && (DebugSettings.godMode || map.listerThings.ThingsOfDef(current).Count > 0))
-            {
-                ThingDef localStuffDef = current;
-                string labelCap = localStuffDef.LabelCap;
-                list.Add(new FloatMenuOption(labelCap, delegate
-                {
-                    __instance.ProcessInput(ev);
-                    Find.DesignatorManager.Select(__instance);
-                    stuffDefFI.SetValue(__instance, current);
-                    writeStuffFI.SetValue(__instance, true);
-                }, MenuOptionPriority.Default, null, null, 0f, null, null));
-            }
-        }
-
-        foreach (Building_InfiniteStorage ts in WorldComp.InfiniteStorages)
-        {
-            if (ts.Map != map || !ts.Spawned || !ts.IsOperational)
-                continue;
-
-            foreach (Thing t in ts.StoredThings)
-            {
-                ThingDef current = t.def;
-                if (current.IsStuff && 
-                    current.stuffProps.CanMake(thingDef) && 
-                    (DebugSettings.godMode || t.stackCount > 0))
-                {
-                    string labelCap = current.LabelCap;
-                    list.Add(new FloatMenuOption(labelCap, delegate
-                    {
-                        __instance.ProcessInput(ev);
-                        Find.DesignatorManager.Select(__instance);
-                        stuffDefFI.SetValue(__instance, current);
-                        writeStuffFI.SetValue(__instance, true);
-                    }, MenuOptionPriority.Default, null, null, 0f, null, null));
-                }
-            }
-        }
-
-        if (list.Count == 0)
-        {
-            Messages.Message("NoStuffsToBuildWith".Translate(), MessageTypeDefOf.RejectInput);
-        }
-        else
-        {
-            FloatMenu floatMenu = new FloatMenu(list);
-            floatMenu.vanishIfMouseDistant = true;
-            Find.WindowStack.Add(floatMenu);
-            Find.DesignatorManager.Select(__instance);
-        }
-        return false;
-    }*/
     #endregion
 
+    #region For bills
     struct ThingsToUse
     {
         public readonly Building_InfiniteStorage Storage;
@@ -420,11 +192,32 @@ namespace InfiniteStorage
         public readonly Thing Thing;
         public ThingsToUse(Building_InfiniteStorage storage, Thing thing, int count)
         {
-#if DEBUG || DROP_DEBUG
-            Log.Warning(" new ThingsToUse: " + thing.def.label + " " + count);
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+            Log.Warning("    new ThingsToUse: " + thing.def.label + " " + count + " " + storage.Label);
 #endif
             this.Storage = storage;
             this.Thing = thing;
+            this.Count = count;
+        }
+    }
+
+    struct ThingLookup
+    {
+        public readonly ThingDef Def;
+        public ThingLookup(ThingDef def) { this.Def = def; }
+        public override int GetHashCode()
+        {
+            return this.Def.GetHashCode();
+        }
+    }
+
+    struct NeededIngrediants
+    {
+        public readonly ThingFilter Filter;
+        public int Count;
+        public NeededIngrediants(ThingFilter filter, int count)
+        {
+            this.Filter = filter;
             this.Count = count;
         }
     }
@@ -434,179 +227,229 @@ namespace InfiniteStorage
     {
         static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
         {
+            if (__result == true || !WorldComp.HasInfiniteStorages)
+                return;
+
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+            Log.Warning("TryFindBestBillIngredients.Postfix __result: " + __result);
+#endif
+            Dictionary<ThingLookup, int> chosenAmounts = new Dictionary<ThingLookup, int>();
+            foreach (ThingAmount c in chosen)
+            {
+                ThingLookup tl = new ThingLookup(c.thing.def);
+                int count;
+                if (chosenAmounts.TryGetValue(tl, out count))
+                {
+                    count += c.count;
+                }
+                else
+                {
+                    count = c.count;
+                }
+                chosenAmounts[tl] = count;
+            }
+
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+            Log.Warning("    ChosenAmounts:");
+            foreach (KeyValuePair<ThingLookup, int> kv in chosenAmounts)
+            {
+                Log.Warning("        " + kv.Key.Def.label + " - " + kv.Value);
+            }
+#endif
+
+            LinkedList<NeededIngrediants> neededIngs = new LinkedList<NeededIngrediants>();
+            foreach (IngredientCount ing in bill.recipe.ingredients)
+            {
+                bool found = false;
+                foreach (KeyValuePair<ThingLookup, int> kv in chosenAmounts)
+                {
+                    if ((int)ing.GetBaseCount() == kv.Value)
+                    {
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+                        Log.Warning("    Needed Ing population count is the same");
+#endif
+                        if (ing.filter.Allows(kv.Key.Def))
+                        {
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+                            Log.Warning("    Needed Ing population found: " + kv.Key.Def.label + " count: " + kv.Value);
+#endif
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found)
+                {
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+                    Log.Warning("    Needed Ing population not found");
+#endif
+                    neededIngs.AddLast(new NeededIngrediants(ing.filter, (int)ing.GetBaseCount()));
+                }
+            }
+
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+            Log.Warning("    Needed Ings:");
+            foreach (NeededIngrediants ings in neededIngs)
+            {
+                Log.Warning("        " + ings.Count);
+            }
+#endif
+
+            List<ThingsToUse> thingsToUse = new List<ThingsToUse>();
+            foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
+            {
+                LinkedListNode<NeededIngrediants> n = neededIngs.First;
+                while (n != null)
+                {
+                    var next = n.Next;
+                    NeededIngrediants neededIng = n.Value;
+
+                    List<Thing> gotten;
+                    if (storage.TryGetFilteredThings(neededIng.Filter, out gotten))
+                    {
+                        foreach (Thing got in gotten)
+                        {
+                            int count = (got.stackCount > neededIng.Count) ? neededIng.Count : got.stackCount;
+                            thingsToUse.Add(new ThingsToUse(storage, got, count));
+                            neededIng.Count -= count;
+                        }
+                        if (neededIng.Count == 0)
+                        {
+                            neededIngs.Remove(n);
+                        }
+                    }
+                    n = next;
+                }
+            }
+
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+            Log.Warning("    neededIngs.count: " + neededIngs.Count);
+#endif
+
+            if (neededIngs.Count == 0)
+            {
+                __result = true;
+                foreach (ThingsToUse ttu in thingsToUse)
+                {
+                    Thing removed;
+                    if (ttu.Storage.TryRemove(ttu.Thing, ttu.Count, out removed))
+                    {
+                        List<Thing> dropped = new List<Thing>();
+                        BuildingUtil.DropThing(removed, removed.stackCount, ttu.Storage, ttu.Storage.Map, false, dropped);
+                        foreach(Thing t in dropped)
+                        {
+                            chosen.Add(new ThingAmount(t, t.stackCount));
+                        }
+                    }
+                }
+            }
+
+            thingsToUse.Clear();
+            neededIngs.Clear();
+            chosenAmounts.Clear();
+        }
+    }
+    /*{
+        static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
+        {
             if (__result == false && WorldComp.HasInfiniteStorages)
             {
-#if DEBUG || DROP_DEBUG
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
                 Log.Warning("TryFindBestBillIngredients.Postfix");
 #endif
                 Stack<ThingsToUse> usedTexiltes = new Stack<ThingsToUse>();
-                foreach (IngredientCount ingredientCount in bill.recipe.ingredients)
+                foreach (IngredientCount ing in bill.recipe.ingredients)
                 {
-#if DEBUG || DROP_DEBUG
-                    Log.Warning("   ingredientCount GetBaseCount: " + ingredientCount.GetBaseCount());
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+                    Log.Warning("   ingredientCount GetBaseCount: " + ing.GetBaseCount());
 #endif
-                    int ingCount = (int)ingredientCount.GetBaseCount();
-                    foreach (Building_InfiniteStorage ts in WorldComp.InfiniteStorages)
+                    int ingCountNeeded = (int)ing.GetBaseCount();
+                    foreach (ThingAmount c in chosen)
                     {
-                        if (ts.Spawned && ts.Map == pawn.Map)
+#if DEBUG || DROP_DEBUG || BILL_DEBUG
+                        Log.Warning("   ThingAmount: " + c.thing.Label + c.count);
+#endif
+                        if (ing.filter.Allows(c.thing))
                         {
-#if DEBUG || DROP_DEBUG
-                            System.Text.StringBuilder sb = new System.Text.StringBuilder("        Ings: ");
-                            foreach (ThingDef d in ingredientCount.filter.AllowedThingDefs) sb.Append(d.label + ", ");
-                            Log.Warning(sb.ToString());
-                            sb = new System.Text.StringBuilder("        Bill.Ings: ");
-                            foreach (ThingDef d in bill.ingredientFilter.AllowedThingDefs) sb.Append(d.label + ", ");
-                            Log.Warning(sb.ToString());
-#endif
-                            foreach (Thing t in ts.StoredThings)
+                            if (ingCountNeeded < c.count)
                             {
-#if DEBUG || DROP_DEBUG
-                                sb = new System.Text.StringBuilder("            Found: ");
-                                sb.Append(t.Label);
-                                sb.Append("-ingFilter:");
-                                sb.Append(ingredientCount.filter.Allows(t).ToString());
-                                sb.Append("-bill.IngFilter:");
-                                sb.Append(bill.ingredientFilter.Allows(t).ToString());
-#endif
-                                if (t != null &&
-                                    bill.ingredientFilter.Allows(t))
-                                {
-                                    if (t.stackCount >= ingCount)
-                                    {
-                                        usedTexiltes.Push(new ThingsToUse(ts, t, ingCount));
-                                        ingCount = 0;
-                                        break;
-                                    }
 
-                                    if (bill.recipe.allowMixingIngredients)
-                                    {
-                                        // Subtract from the needed ingrediants since it's known the stackCount is less
-                                        ingCount -= t.stackCount;
-                                        usedTexiltes.Push(new ThingsToUse(ts, t, t.stackCount));
-                                    }
-                                }
-#if DEBUG || DROP_DEBUG
-                                Log.Warning(sb.ToString());
-#endif
                             }
+                            else
+                            {
+                                ingCountNeeded -= c.count;
+                            }
+                            break;
                         }
                     }
+                    if (ingCountNeeded > 0)
 
-                    if (ingCount == 0)
+
+                        foreach (Building_InfiniteStorage ts in WorldComp.InfiniteStorages)
+                        {
+                            if (ts.Spawned && ts.Map == pawn.Map)
+                            {
+#if DEBUG || DROP_DEBUG
+                                System.Text.StringBuilder sb = new System.Text.StringBuilder("        Ings: ");
+                                foreach (ThingDef d in ing.filter.AllowedThingDefs) sb.Append(d.label + ", ");
+                                Log.Warning(sb.ToString());
+                                sb = new System.Text.StringBuilder("        Bill.Ings: ");
+                                foreach (ThingDef d in bill.ingredientFilter.AllowedThingDefs) sb.Append(d.label + ", ");
+                                Log.Warning(sb.ToString());
+#endif
+                                foreach (Thing t in ts.StoredThings)
+                                {
+#if DEBUG || DROP_DEBUG
+                                    sb = new System.Text.StringBuilder("            Found: ");
+                                    sb.Append(t.Label);
+                                    sb.Append("-ingFilter:");
+                                    sb.Append(ing.filter.Allows(t).ToString());
+                                    sb.Append("-bill.IngFilter:");
+                                    sb.Append(bill.ingredientFilter.Allows(t).ToString());
+#endif
+                                    if (t != null &&
+                                        bill.ingredientFilter.Allows(t))
+                                    {
+                                        if (t.stackCount >= ingCountNeeded)
+                                        {
+                                            usedTexiltes.Push(new ThingsToUse(ts, t, ingCountNeeded));
+                                            ingCountNeeded = 0;
+                                            break;
+                                        }
+
+                                        if (bill.recipe.allowMixingIngredients)
+                                        {
+                                            // Subtract from the needed ingrediants since it's known the stackCount is less
+                                            ingCountNeeded -= t.stackCount;
+                                            usedTexiltes.Push(new ThingsToUse(ts, t, t.stackCount));
+                                        }
+                                    }
+#if DEBUG || DROP_DEBUG
+                                    Log.Warning(sb.ToString());
+#endif
+                                }
+                            }
+                        }
+
+                    if (ingCountNeeded == 0)
                     {
                         __result = true;
                         while (usedTexiltes.Count > 0)
                         {
                             ThingsToUse t = usedTexiltes.Pop();
-                            Thing removed = t.Storage.Remove(t.Thing, t.Count);
-                            BuildingUtil.DropThing(removed, removed.stackCount, t.Storage, t.Storage.Map, false);
+                            Thing removed;
+                            if (t.Storage.TryRemove(t.Thing, t.Count, out removed))
+                            {
+                                BuildingUtil.DropThing(removed, removed.stackCount, t.Storage, t.Storage.Map, false);
+                            }
                         }
                     }
                     usedTexiltes.Clear();
                 }
             }
         }
-    }
-
-    /*   [HarmonyPatch(typeof(WorkGiver_DoBill), "TryStartNewDoBillJob")]
-       static class Patch_WorkGiver_DoBill_TryStartNewDoBillJob
-       {
-           static List<ThingsToUse> ThingsToUse = new List<ThingsToUse>();
-           internal static void ClearThingsToUse()
-           {
-               ThingsToUse.Clear();
-           }
-           internal static void AddThingTouse(ThingsToUse thingToUse)
-           {
-               ThingsToUse.Add(thingToUse);
-           }
-
-           static void Postfix(Job __result)
-           {
-               if (ThingsToUse != null)
-               {
-                   try
-                   {
-                       if (__result != null && 
-                           __result.def == JobDefOf.DoBill)
-                       {
-                           foreach(ThingsToUse ttu in ThingsToUse)
-                           {
-                               BuildingUtil.DropThing(ttu.Thing, ttu.Count, ttu.Storage, ttu.Storage.Map, false, null);
-                           }
-                       }
-                   }
-                   finally
-                   {
-                       ClearThingsToUse();
-                   }
-               }
-           }
-       }
-
-       [HarmonyPatch(typeof(WorkGiver_DoBill), "TryFindBestBillIngredients")]
-       static class Patch_WorkGiver_DoBill_TryFindBestBillIngredients
-       {
-           static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
-           {
-               Patch_WorkGiver_DoBill_TryStartNewDoBillJob.ClearThingsToUse();
-               if (__result == false && WorldComp.HasInfiniteStorages)
-               {
-#if DEBUG || DROP_DEBUG
-                   Log.Warning("TryFindBestBillIngredients.Postfix");
-#endif
-                   foreach (IngredientCount ingredientCount in bill.recipe.ingredients)
-                   {
-#if DEBUG || DROP_DEBUG
-                       Log.Warning("   ingredientCount GetBaseCount: " + ingredientCount.GetBaseCount());
-#endif
-                       int ingCount = (int)ingredientCount.GetBaseCount();
-                       foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
-                       {
-                           bool found = false;
-                           if (storage.Spawned && storage.Map == pawn.Map && storage.IsOperational)
-                           {
-#if DEBUG || DROP_DEBUG
-                               // System.Text.StringBuilder sb = new System.Text.StringBuilder("        Ings: ");
-                               //foreach (ThingDef d in ingredientCount.filter.AllowedThingDefs) sb.Append(d.label + ", ");
-                               //Log.Warning(sb.ToString());
-                               System.Text.StringBuilder sb = new System.Text.StringBuilder("        Bill.Ings: ");
-                               foreach (ThingDef d in bill.ingredientFilter.AllowedThingDefs) sb.Append(d.label + ", ");
-                               Log.Warning(sb.ToString());
-#endif
-                               foreach (Thing thing in storage.StoredThings)
-                               {
-#if DEBUG || DROP_DEBUG
-                                   sb = new System.Text.StringBuilder("            Found: ");
-                                   sb.Append(thing.Label);
-                                  // sb.Append("-ingFilter:");
-                                  // sb.Append(ingredientCount.filter.Allows(thing).ToString());
-                                   sb.Append("-bill.IngFilter:");
-                                   sb.Append(bill.ingredientFilter.Allows(thing).ToString());
-#endif
-                                   if (thing != null &&
-                                       bill.ingredientFilter.Allows(thing) &&
-                                       thing.stackCount >= ingCount)
-                                   {
-                                       //Log.Warning("Drop Thing: " + thing.Label + "\n" + System.Environment.StackTrace.ToString());
-                                       //BuildingUtil.DropThing(thing, ingCount, storage, storage.Map, chosen);
-                                       chosen.Add(new ThingAmount(thing, ingCount));
-                                       Patch_WorkGiver_DoBill_TryStartNewDoBillJob.AddThingTouse(
-                                           new ThingsToUse(storage, thing, ingCount));
-                                       break;
-                                   }
-#if DEBUG || DROP_DEBUG
-                                   Log.Warning(sb.ToString());
-#endif
-                               }
-                               if (found)
-                                   break;
-                           }
-                       }
-                   }
-               }
-           }
-       }*/
+    }*/
+    #endregion
 
     [HarmonyPatch(typeof(WorkGiver_Refuel), "FindBestFuel")]
     static class Patch_WorkGiver_Refuel_FindBestFuel
@@ -676,16 +519,22 @@ namespace InfiniteStorage
                 foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
                 {
                     Thing thing;
-                    if (storage.IsOperational && storage.Spawned && storage.TryGetValue(need.thingDef, out thing))
+                    if (storage.IsOperational && 
+                        storage.Spawned && 
+                        storage.TryGetValue(need.thingDef, out thing))
                     {
                         if (thing.stackCount >= need.count)
                         {
-                            Thing removed = storage.Remove(thing, need.count);
-                            BuildingUtil.DropThing(removed, removed.stackCount, storage, storage.Map, false);
+                            Thing removed;
+                            int toDrop = (need.count < thing.def.stackLimit) ? thing.def.stackLimit : need.count;
+                            if (storage.TryRemove(thing, toDrop, out removed))
+                            {
+                                BuildingUtil.DropThing(removed, removed.stackCount, storage, storage.Map, false);
 
-                            __result = true;
-                            ((Dictionary<int, bool>)CachedResultsFI.GetValue(__instance))[Gen.HashCombine<Faction>(need.GetHashCode(), pawn.Faction)] = __result;
-                            return;
+                                __result = true;
+                                ((Dictionary<int, bool>)CachedResultsFI.GetValue(__instance))[Gen.HashCombine<Faction>(need.GetHashCode(), pawn.Faction)] = __result;
+                            }
+                            break;
                         }
                     }
                 }
@@ -767,46 +616,6 @@ namespace InfiniteStorage
             }
             return true;
         }
-        /*
-        private static FieldInfo mapFI = null;
-        static void Postfix(ref bool __result, ReservationManager __instance, Pawn claimant, LocalTargetInfo target, int maxPawns, int stackCount, ReservationLayerDef layer, bool ignoreOtherReservations)
-        {
-            if (mapFI == null)
-            {
-                mapFI = typeof(ReservationManager).GetField("map", BindingFlags.NonPublic | BindingFlags.Instance);
-            }
-
-#if DEBUG
-            Log.Warning("\nCanReserve original result: " + __result);
-#endif
-            if (!__result && mapFI != null && (target.Thing == null || target.Thing.def.thingClass.Equals("InfiniteStorage.Building_InfiniteStorage")))
-            {
-                Map m = (Map)mapFI.GetValue(__instance);
-                if (m != null)
-                {
-                    IEnumerable<Thing> things = m.thingGrid.ThingsAt(target.Cell);
-                    if (things != null)
-                    {
-#if DEBUG
-                        Log.Warning("CanReserve - Found things");
-#endif
-                        foreach (Thing t in things)
-                        {
-#if DEBUG
-                            Log.Warning("CanReserve - def " + t.def.defName);
-#endif
-                            if (t.def.thingClass.Equals("InfiniteStorage.Building_InfiniteStorage"))
-                            {
-#if DEBUG
-                                Log.Warning("CanReserve is now true\n");
-#endif
-                                __result = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }*/
     }
 
     #region Trades
