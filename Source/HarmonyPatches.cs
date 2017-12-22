@@ -31,24 +31,39 @@ namespace InfiniteStorage
     [HarmonyPatch(typeof(HealthCardUtility), "DrawMedOperationsTab")]
     static class Patch_HealthCardUtility_DrawMedOperationsTab
     {
+        [HarmonyPriority(Priority.First)]
         static void Prefix(Pawn pawn)
         {
-            Patch_ListerThings_ThingsInGroup.AvailableBodyParts = new List<Thing>();
-            foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
+            if (pawn == null)
+                return;
+
+            if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing != null)
+            {
+                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
+            }
+
+            Patch_ListerThings_ThingsInGroup.AvailableMedicalThing = new List<Thing>();
+            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
             {
                 if (storage.IsOperational && storage.Map == pawn.Map)
                 {
-                    Patch_ListerThings_ThingsInGroup.AvailableBodyParts.AddRange(storage.StoredThings);
+                    foreach (Thing t in storage.StoredThings)
+                    {
+                        if (t.def.IsDrug || t.def.isBodyPartOrImplant)
+                        {
+                            Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(storage.StoredThings);
+                        }
+                    }
                 }
             }
         }
 
         static void Postfix()
         {
-            if (Patch_ListerThings_ThingsInGroup.AvailableBodyParts != null)
+            if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing != null)
             {
-                Patch_ListerThings_ThingsInGroup.AvailableBodyParts.Clear();
-                Patch_ListerThings_ThingsInGroup.AvailableBodyParts = null;
+                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
+                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing = null;
             }
         }
     }
@@ -56,12 +71,12 @@ namespace InfiniteStorage
     [HarmonyPatch(typeof(ListerThings), "ThingsInGroup")]
     static class Patch_ListerThings_ThingsInGroup
     {
-        public static List<Thing> AvailableBodyParts = null;
+        public static List<Thing> AvailableMedicalThing = null;
         static void Postfix(ref List<Thing> __result, ThingRequestGroup group)
         {
-            if (AvailableBodyParts != null)
+            if (AvailableMedicalThing != null)
             {
-                __result.AddRange(AvailableBodyParts);
+                __result.AddRange(AvailableMedicalThing);
             }
         }
     }
@@ -80,7 +95,7 @@ namespace InfiniteStorage
 
             Dictionary<ThingDef, int> countedAmounts = (Dictionary<ThingDef, int>)countedAmountsFI.GetValue(__instance);
 
-            foreach (Building_InfiniteStorage ts in WorldComp.InfiniteStorages)
+            foreach (Building_InfiniteStorage ts in WorldComp.GetInfiniteStorages(Find.VisibleMap))
             {
                 foreach (Thing thing in ts.StoredThings)
                 {
@@ -119,13 +134,14 @@ namespace InfiniteStorage
                 writeStuffFI = typeof(Designator_Build).GetField("writeStuff", BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
+            Map map = Find.VisibleMap;
+
             ThingDef thingDef = entDefFI.GetValue(__instance) as ThingDef;
-            if (thingDef == null || !thingDef.MadeFromStuff || !WorldComp.HasInfiniteStorages)
+            if (thingDef == null || !thingDef.MadeFromStuff || !WorldComp.HasInfiniteStorages(map))
             {
                 return true;
             }
 
-            Map map = Find.VisibleMap;
             List<FloatMenuOption> list = new List<FloatMenuOption>();
 
             foreach (ThingDef current in map.resourceCounter.AllCountedAmounts.Keys)
@@ -144,26 +160,26 @@ namespace InfiniteStorage
                 }
             }
 
-            foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
+            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
             {
-                if (storage.Map != map || !storage.Spawned)
-                    continue;
-
-                foreach (Thing t in storage.StoredThings)
+                if (storage.Spawned)
                 {
-                    ThingDef current = t.def;
-                    if (current.IsStuff &&
-                        current.stuffProps.CanMake(thingDef) &&
-                        (DebugSettings.godMode || t.stackCount > 0))
+                    foreach (Thing t in storage.StoredThings)
                     {
-                        string labelCap = current.LabelCap;
-                        list.Add(new FloatMenuOption(labelCap, delegate
+                        ThingDef current = t.def;
+                        if (current.IsStuff &&
+                            current.stuffProps.CanMake(thingDef) &&
+                            (DebugSettings.godMode || t.stackCount > 0))
                         {
-                            __instance.ProcessInput(ev);
-                            Find.DesignatorManager.Select(__instance);
-                            stuffDefFI.SetValue(__instance, current);
-                            writeStuffFI.SetValue(__instance, true);
-                        }, MenuOptionPriority.Default, null, null, 0f, null, null));
+                            string labelCap = current.LabelCap;
+                            list.Add(new FloatMenuOption(labelCap, delegate
+                            {
+                                __instance.ProcessInput(ev);
+                                Find.DesignatorManager.Select(__instance);
+                                stuffDefFI.SetValue(__instance, current);
+                                writeStuffFI.SetValue(__instance, true);
+                            }, MenuOptionPriority.Default, null, null, 0f, null, null));
+                        }
                     }
                 }
             }
@@ -198,6 +214,14 @@ namespace InfiniteStorage
             this.Storage = storage;
             this.Thing = thing;
             this.Count = count;
+            if (this.Count == 0)
+            {
+                this.Count = this.Thing.stackCount;
+                if (this.Count == 0)
+                {
+                    this.Count = 1;
+                }
+            }
         }
     }
 
@@ -227,7 +251,12 @@ namespace InfiniteStorage
     {
         static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
         {
-            if (__result == true || !WorldComp.HasInfiniteStorages)
+            if (bill.Map == null)
+            {
+                Log.Error("Bill's map is null");
+            }
+
+            if (__result == true || !WorldComp.HasInfiniteStorages(bill.Map) || bill.Map != pawn.Map)
                 return;
 
 #if DEBUG || DROP_DEBUG || BILL_DEBUG
@@ -296,7 +325,7 @@ namespace InfiniteStorage
 #endif
 
             List<ThingsToUse> thingsToUse = new List<ThingsToUse>();
-            foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
+            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(bill.Map))
             {
                 LinkedListNode<NeededIngrediants> n = neededIngs.First;
                 while (n != null)
@@ -457,13 +486,13 @@ namespace InfiniteStorage
         private static Dictionary<Thing, Building_InfiniteStorage> droppedAndStorage = null;
         static void Prefix(Pawn pawn, Thing refuelable)
         {
-            if (WorldComp.HasInfiniteStorages)
+            if (WorldComp.HasInfiniteStorages(refuelable.Map))
             {
                 droppedAndStorage = new Dictionary<Thing, Building_InfiniteStorage>();
 
                 ThingFilter filter = refuelable.TryGetComp<CompRefuelable>().Props.fuelFilter;
 
-                foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
+                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(refuelable.Map))
                 {
                     if (storage.Spawned && storage.Map == pawn.Map && storage.IsOperational)
                     {
@@ -516,7 +545,7 @@ namespace InfiniteStorage
         {
             if (!__result && pawn != null && pawn.Faction == Faction.OfPlayer)
             {
-                foreach (Building_InfiniteStorage storage in WorldComp.InfiniteStorages)
+                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
                 {
                     Thing thing;
                     if (storage.IsOperational && 
@@ -624,11 +653,11 @@ namespace InfiniteStorage
         public static IEnumerable<Thing> EmptyStorages(Map map)
         {
             List<Thing> l = new List<Thing>();
-            foreach (Building_InfiniteStorage ts in WorldComp.InfiniteStorages)
+            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
             {
-                if (ts.Map == map && ts.Spawned && ts.IncludeInTradeDeals)
+                if (storage.Map == map && storage.Spawned && storage.IncludeInTradeDeals)
                 {
-                    ts.Empty(l);
+                    storage.Empty(l);
                 }
             }
             return l;
@@ -636,11 +665,11 @@ namespace InfiniteStorage
 
         public static void ReclaimThings()
         {
-            foreach (Building_InfiniteStorage ts in WorldComp.InfiniteStorages)
+            foreach (Building_InfiniteStorage storage in WorldComp.GetAllInfiniteStorages())
             {
-                if (ts.Map != null && ts.Spawned)
+                if (storage.Map != null && storage.Spawned)
                 {
-                    ts.Reclaim();
+                    storage.Reclaim();
                 }
             }
         }
@@ -685,11 +714,10 @@ namespace InfiniteStorage
         }
     }
     #endregion
-
+    
     /*#region Caravan Forming
-
-    [HarmonyPatch(typeof(Window), "PreOpen")]
-    static class Patch_Window_PreOpen
+    [HarmonyPatch(typeof(Dialog_FormCaravan), "PostOpen")]
+    static class Patch_Dialog_FormCaravan_PostOpen
     {
         static void Prefix(Window __instance)
         {
@@ -701,7 +729,7 @@ namespace InfiniteStorage
             }
         }
     }
-#endregion*/
+    #endregion*/
 
     #region Handle "Do until X" for stored weapons
     [HarmonyPatch(typeof(RecipeWorkerCounter), "CountProducts")]
@@ -709,18 +737,20 @@ namespace InfiniteStorage
     {
         static void Postfix(ref int __result, RecipeWorkerCounter __instance, Bill_Production bill)
         {
+            if (bill.Map == null)
+            {
+                Log.Error("Bill has null map");
+            }
+
             List<ThingCountClass> products = __instance.recipe.products;
-            if (WorldComp.HasInfiniteStorages && products != null)
+            if (WorldComp.HasInfiniteStorages(bill.Map) && products != null)
             {
                 foreach (ThingCountClass product in products)
                 {
                     ThingDef def = product.thingDef;
-                    foreach (Building_InfiniteStorage s in WorldComp.InfiniteStorages)
+                    foreach (Building_InfiniteStorage s in WorldComp.GetInfiniteStorages(bill.Map))
                     {
-                        if (bill.Map == s.Map)
-                        {
-                            __result += s.StoredThingCount(def);
-                        }
+                        __result += s.StoredThingCount(def);
                     }
                 }
             }

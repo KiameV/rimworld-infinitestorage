@@ -2,6 +2,7 @@
 using UnityEngine;
 using Verse;
 using System;
+using System.Text;
 
 namespace InfiniteStorage.UI
 {
@@ -18,6 +19,7 @@ namespace InfiniteStorage.UI
             collectTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/collect", true);
             yesSellTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/yessell", true);
             noSellTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/nosell", true);
+            applyFiltersTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/filter", true);
         }
 
         private readonly Building_InfiniteStorage ThingStorage;
@@ -30,8 +32,10 @@ namespace InfiniteStorage.UI
         public static Texture2D collectTexture;
         public static Texture2D yesSellTexture;
         public static Texture2D noSellTexture;
+        public static Texture2D applyFiltersTexture;
 
         private Vector2 scrollPosition = new Vector2(0, 0);
+        private String searchText = "";
 
         const int HEIGHT = 30;
         const int BUFFER = 2;
@@ -67,36 +71,54 @@ namespace InfiniteStorage.UI
             Text.Font = GameFont.Small;
             try
             {
-                int rows = this.ThingStorage.DefsCount;
-                Rect r = new Rect(0, 20, 384, (rows + 1) * (HEIGHT + BUFFER));
-                scrollPosition = GUI.BeginScrollView(new Rect(50, 0, 400, 500), scrollPosition, r);
+#if DEBUG
+                StringBuilder sb = new StringBuilder("search for: " + searchText);
+#endif
+                this.searchText = Widgets.TextEntryLabeled(new Rect(20, 20, 300, 32), "InfiniteStorage.Search".Translate() + ": ", this.searchText);
 
+                int rows = this.ThingStorage.DefsCount;
+                Rect r = new Rect(0, 52, 368, (rows + 1) * (HEIGHT + BUFFER));
+                scrollPosition = GUI.BeginScrollView(new Rect(50, 52, r.width + 18, inRect.height - 100), scrollPosition, r);
                 int i = 0;
                 foreach (Thing thing in this.ThingStorage.StoredThings)
                 {
                     if (thing != null)
                     {
-                        GUI.BeginGroup(new Rect(0, 22 + i * (HEIGHT + BUFFER), r.width, HEIGHT));
-
-                        Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
-
-                        Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), thing.Label);
-
-                        if (this.ThingStorage.IsOperational &&
-                            Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
+                        string label = this.FormatLabel(thing);
+                        if (searchText.Length == 0 || label.Contains(searchText))
                         {
-                            this.ThingStorage.AllowAdds = false;
-                            Thing removed;
-                            if (this.ThingStorage.TryRemove(thing, thing.stackCount, out removed))
+                            GUI.BeginGroup(new Rect(0, 22 + i * (HEIGHT + BUFFER), r.width, HEIGHT));
+
+                            Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
+
+                            Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), label);
+
+                            if (this.ThingStorage.IsOperational &&
+                                Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
                             {
-                                BuildingUtil.DropThing(removed, removed.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
+                                this.ThingStorage.AllowAdds = false;
+                                Thing removed;
+                                if (this.ThingStorage.TryRemove(thing, thing.stackCount, out removed))
+                                {
+                                    BuildingUtil.DropThing(removed, removed.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
+                                }
+                                break;
                             }
-                            break;
+                            GUI.EndGroup();
+                            ++i;
                         }
-                        GUI.EndGroup();
-                        ++i;
+#if DEBUG
+                        else
+                        {
+                            sb.Append("[" + thing.def.label + "], ");
+                        }
+#endif
                     }
                 }
+
+#if DEBUG
+                Log.Warning(sb.ToString());
+#endif
                 GUI.EndScrollView();
             }
             catch (Exception e)
@@ -111,6 +133,27 @@ namespace InfiniteStorage.UI
                 Text.Anchor = TextAnchor.UpperLeft;
                 GUI.color = Color.white;
             }
+        }
+
+        private string FormatLabel(Thing t)
+        {
+            if (t is MinifiedThing)
+            {
+                return t.Label;
+            }
+            StringBuilder sb = new StringBuilder(t.def.label);
+            if (t.Stuff != null)
+            {
+                sb.Append(" (");
+                sb.Append(t.Stuff.LabelAsStuff);
+                sb.Append(")");
+            }
+            if (t.stackCount > 0)
+            {
+                sb.Append(" x");
+                sb.Append(t.stackCount);
+            }
+            return sb.ToString();
         }
     }
 }

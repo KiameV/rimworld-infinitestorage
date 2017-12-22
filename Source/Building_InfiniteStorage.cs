@@ -1,9 +1,7 @@
 ﻿using InfiniteStorage.UI;
 using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -70,7 +68,7 @@ namespace InfiniteStorage
                 base.settings.filter.SetDisallowAll();
             }
 
-            WorldComp.Add(this);
+            WorldComp.Add(map, this);
 
             this.compPowerTrader = this.GetComp<CompPowerTrader>();
 
@@ -139,7 +137,7 @@ namespace InfiniteStorage
                     e.StackTrace);
             }
 
-            WorldComp.Remove(this);
+            WorldComp.Remove(this.CurrentMap, this);
         }
 
         private void DropThing(Thing t, bool makeForbidden = true)
@@ -179,8 +177,27 @@ namespace InfiniteStorage
         {
             if (this.IsOperational)
             {
+                float powerAvailable = 0;
+                if (this.UsesPower)
+                {
+                    powerAvailable = this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick;
+                    if (powerAvailable <= Settings.DesiredEnergyBuffer)
+                    {
+                        return;
+                    }
+                    powerAvailable -= Settings.DesiredEnergyBuffer;
+                }
+
                 foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
                 {
+                    if (this.UsesPower)
+                    {
+                        float newWeight = this.storedWeight + this.GetThingWeight(t, t.stackCount);
+                        if (newWeight * Settings.EnergyFactor > powerAvailable)
+                        {
+                            continue;
+                        }
+                    }
                     this.Add(t);
                 }
             }
@@ -219,6 +236,15 @@ namespace InfiniteStorage
                 !this.IsOperational)
             {
                 return false;
+            }
+
+            if (this.UsesPower)
+            {
+                if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick < 
+                    Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
+                {
+                    return false;
+                }
             }
 
             if (thing.stackCount == 0)
@@ -262,6 +288,11 @@ namespace InfiniteStorage
             return true;
         }
 
+        private float GetThingWeight(Thing thing, int count)
+        {
+            return thing.GetStatValue(StatDefOf.Mass, true) * count;
+        }
+
         public bool TryGetFilteredThings(ThingFilter filter, out List<Thing> gotten)
         {
             gotten = null;
@@ -301,7 +332,7 @@ namespace InfiniteStorage
         {
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
-                if (l.Count > 0 &&
+                if (l.Count > 0 && 
                     filter.Allows(l.First.Value.def))
                 {
                     Thing t = l.First.Value;
@@ -325,7 +356,7 @@ namespace InfiniteStorage
                     {
                         count = removed.stackCount;
                         l.RemoveFirst();
-                        if (l.Count == 0)
+                        if (l.Count <= 0)
                         {
                             this.storedThings.Remove(thing.def.label);
                         }
@@ -347,7 +378,7 @@ namespace InfiniteStorage
         private void UpdateStoredStats(Thing thing, int count, bool force = false)
         {
             this.storedCount += count;
-            this.storedWeight += thing.GetStatValue(StatDefOf.Mass, true) * count;
+            this.storedWeight += this.GetThingWeight(thing, count);
             //++countSinceLastUpdate;
             if (this.storedWeight < 0)// || MAX_COUNT_BEFORE_RECALC < countSinceLastUpdate)
             {
@@ -542,7 +573,7 @@ namespace InfiniteStorage
 
             l.Add(new Command_Action
             {
-                //icon = ViewUI.applyFilters,
+                icon = ViewUI.applyFiltersTexture,
                 defaultDesc = "InfiniteStorage.ApplyFiltersDesc".Translate(),
                 defaultLabel = "InfiniteStorage.ApplyFilters".Translate(),
                 activateSound = SoundDef.Named("Click"),

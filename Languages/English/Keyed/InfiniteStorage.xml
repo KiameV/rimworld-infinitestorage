@@ -16,6 +16,9 @@
 	<InfiniteStorage.View>View Storage</InfiniteStorage.View>
 	<InfiniteStorage.ViewDesc>View the items stored.</InfiniteStorage.ViewDesc>
 	
+	<!-- 'View' Dialog Window -->
+	<InfiniteStorage.Search>Search</InfiniteStorage.Search>
+	
 	<!-- Settings Page -->
 	<InfiniteStorage>Infinite Storage</InfiniteStorage>
 	<InfiniteStorage.EnergyFactor>Energy Factor</InfiniteStorage.EnergyFactor>
@@ -25,4 +28,6 @@
 	<InfiniteStorage.TimeBetweenAutoCollects>Time Between Auto-Collects in Seconds</InfiniteStorage.TimeBetweenAutoCollects>
 	<InfiniteStorage.TimeBetweenAutoCollectsSet>Time Between Auto-Collects set to {v}.</InfiniteStorage.TimeBetweenAutoCollectsSet>
 	<InfiniteStorage.NumberGreaterThanZero>Must be a number greater than 0.</InfiniteStorage.NumberGreaterThanZero>
+	<InfiniteStorage.EnergyBuffer>Energy Buffer (W)</InfiniteStorage.EnergyBuffer>
+	<InfiniteStorage.EnergyBufferSet>Energy buffer set to {v}</InfiniteStorage.EnergyBufferSet>
 </LanguageData>
