@@ -1,11 +1,13 @@
 ﻿using Harmony;
 using RimWorld;
+using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.AI.Group;
 
 namespace InfiniteStorage
 {
@@ -365,7 +367,7 @@ namespace InfiniteStorage
                     {
                         List<Thing> dropped = new List<Thing>();
                         BuildingUtil.DropThing(removed, removed.stackCount, ttu.Storage, ttu.Storage.Map, false, dropped);
-                        foreach(Thing t in dropped)
+                        foreach (Thing t in dropped)
                         {
                             chosen.Add(new ThingAmount(t, t.stackCount));
                         }
@@ -548,8 +550,8 @@ namespace InfiniteStorage
                 foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
                 {
                     Thing thing;
-                    if (storage.IsOperational && 
-                        storage.Spawned && 
+                    if (storage.IsOperational &&
+                        storage.Spawned &&
                         storage.TryGetValue(need.thingDef, out thing))
                     {
                         if (thing.stackCount >= need.count)
@@ -571,6 +573,7 @@ namespace InfiniteStorage
         }
     }
 
+    #region Reserve
     static class ReservationManagerUtil
     {
         private static FieldInfo mapFI = null;
@@ -646,6 +649,7 @@ namespace InfiniteStorage
             return true;
         }
     }
+    #endregion
 
     #region Trades
     static class TradeUtil
@@ -708,14 +712,15 @@ namespace InfiniteStorage
     [HarmonyPatch(typeof(Dialog_Trade), "Close")]
     static class Patch_Window_PreClose
     {
+        [HarmonyPriority(Priority.First)]
         static void Postfix(bool doCloseSound)
         {
             TradeUtil.ReclaimThings();
         }
     }
     #endregion
-    
-    /*#region Caravan Forming
+
+    #region Caravan Forming
     [HarmonyPatch(typeof(Dialog_FormCaravan), "PostOpen")]
     static class Patch_Dialog_FormCaravan_PostOpen
     {
@@ -726,10 +731,74 @@ namespace InfiniteStorage
             {
                 Map map = __instance.GetType().GetField("map", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance) as Map;
                 TradeUtil.EmptyStorages(map);
+
+                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
+                {
+                    storage.CanAutoCollect = false;
+                }
             }
         }
     }
-    #endregion*/
+
+    [HarmonyPatch(typeof(CaravanFormingUtility), "StopFormingCaravan")]
+    static class Patch_CaravanFormingUtility_StopFormingCaravan
+    {
+        [HarmonyPriority(Priority.First)]
+        static void Postfix(Lord lord)
+        {
+            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(lord.Map))
+            {
+                storage.CanAutoCollect = true;
+                storage.Reclaim();
+            }
+        }
+    }
+
+    [HarmonyPatch(
+        typeof(CaravanExitMapUtility), "ExitMapAndCreateCaravan", 
+        new Type[] { typeof (IEnumerable<Pawn>), typeof (Faction), typeof(int), typeof(int) })]
+    static class Patch_CaravanExitMapUtility_ExitMapAndCreateCaravan_1
+    {
+        [HarmonyPriority(Priority.First)]
+        static void Prefix(IEnumerable<Pawn> pawns, Faction faction, int exitFromTile, int directionTile)
+        {
+            if (faction == Faction.OfPlayer)
+            {
+                List<Pawn> p = new List<Pawn>(pawns);
+                if (p.Count > 0)
+                {
+                    foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(p[0].Map))
+                    {
+                        storage.CanAutoCollect = true;
+                        storage.Reclaim();
+                    }
+                }
+            }
+        }
+    }
+
+    [HarmonyPatch(
+        typeof(CaravanExitMapUtility), "ExitMapAndCreateCaravan",
+        new Type[] { typeof(IEnumerable<Pawn>), typeof(Faction), typeof(int) })]
+    static class Patch_CaravanExitMapUtility_ExitMapAndCreateCaravan_2
+    {
+        static void Prefix(IEnumerable<Pawn> pawns, Faction faction, int startingTile)
+        {
+            if (faction == Faction.OfPlayer)
+            {
+                List<Pawn> p = new List<Pawn>(pawns);
+                if (p.Count > 0)
+                {
+                    foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(p[0].Map))
+                    {
+                        storage.CanAutoCollect = true;
+                        storage.Reclaim();
+                    }
+                }
+            }
+        }
+    }
+    #endregion
 
     #region Handle "Do until X" for stored weapons
     [HarmonyPatch(typeof(RecipeWorkerCounter), "CountProducts")]

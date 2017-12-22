@@ -30,4 +30,5 @@
 	<InfiniteStorage.NumberGreaterThanZero>Must be a number greater than 0.</InfiniteStorage.NumberGreaterThanZero>
 	<InfiniteStorage.EnergyBuffer>Energy Buffer (W)</InfiniteStorage.EnergyBuffer>
 	<InfiniteStorage.EnergyBufferSet>Energy buffer set to {v}</InfiniteStorage.EnergyBufferSet>
+	<InfiniteStorage.EnergyBufferDesc>Infinite Storage will stop adding things if the colony's excess energy is under the given number.</InfiniteStorage.EnergyBufferDesc>
 </LanguageData>

@@ -42,6 +42,8 @@ namespace InfiniteStorage
         public bool UsesPower { get { return this.compPowerTrader != null; } }
         public bool IsOperational { get { return this.compPowerTrader == null || this.compPowerTrader.PowerOn; } }
 
+        public bool CanAutoCollect { get; set; }
+
         private long lastAutoReclaim = 0;
 
         private List<Thing> ToDumpOnSpawn = null;
@@ -54,6 +56,7 @@ namespace InfiniteStorage
         public Building_InfiniteStorage()
         {
             this.AllowAdds = true;
+            this.CanAutoCollect = true;
         }
 
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -175,7 +178,7 @@ namespace InfiniteStorage
 
         public void Reclaim(bool respectReserved = false)
         {
-            if (this.IsOperational)
+            if (this.IsOperational && this.CanAutoCollect)
             {
                 float powerAvailable = 0;
                 if (this.UsesPower)
@@ -372,17 +375,13 @@ namespace InfiniteStorage
             removed = null;
             return false;
         }
-
-        //const int MAX_COUNT_BEFORE_RECALC = 30;
-        //int countSinceLastUpdate = 0;
+        
         private void UpdateStoredStats(Thing thing, int count, bool force = false)
         {
             this.storedCount += count;
             this.storedWeight += this.GetThingWeight(thing, count);
-            //++countSinceLastUpdate;
-            if (this.storedWeight < 0)// || MAX_COUNT_BEFORE_RECALC < countSinceLastUpdate)
+            if (this.storedWeight < 0)
             {
-                //countSinceLastUpdate = 0;
                 this.storedCount = 0;
                 this.storedWeight = 0;
                 foreach (LinkedList<Thing> l in this.storedThings.Values)
@@ -503,7 +502,7 @@ namespace InfiniteStorage
             }
 
             long now = DateTime.Now.Ticks;
-            if (Settings.CollectThingsAutomatically && 
+            if (Settings.CollectThingsAutomatically &&
                 now - this.lastAutoReclaim > Settings.TimeBetweenAutoCollectsTicks)
             {
                 this.Reclaim(true);
@@ -554,7 +553,10 @@ namespace InfiniteStorage
                     defaultDesc = "InfiniteStorage.CollectDesc".Translate(),
                     defaultLabel = "InfiniteStorage.Collect".Translate(),
                     activateSound = SoundDef.Named("Click"),
-                    action = delegate { this.Reclaim(); },
+                    action = delegate {
+                        this.CanAutoCollect = true;
+                        this.Reclaim();
+                    },
                     groupKey = key
                 });
                 ++key;

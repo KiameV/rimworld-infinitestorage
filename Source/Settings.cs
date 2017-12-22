@@ -82,7 +82,13 @@ namespace InfiniteStorage
                 Messages.Message("InfiniteStorage.EnergyBufferSet".Translate().Replace("{v}", desiredEnergyBuffer.ToString()), MessageTypeDefOf.PositiveEvent);
             }
 
-            y += 60;
+            y += 50;
+            Widgets.Label(new Rect(25, y, rect.width - 50, 32), "InfiniteStorage.EnergyBufferDesc".Translate());
+
+            y += 29;
+            Widgets.DrawLineHorizontal(0, y, rect.width);
+
+            y += 29;
             energyFactorUserInput = Widgets.TextEntryLabeled(new Rect(0, y, 300, 32), "InfiniteStorage.EnergyFactor".Translate() + ":   ", energyFactorUserInput);
 
             y += 50;
@@ -109,14 +115,18 @@ namespace InfiniteStorage
             y += 50;
             Widgets.Label(new Rect(25, y, rect.width - 50, 32), "InfiniteStorage.EnergyFactorDesc".Translate());
 
-            y += 60;
+
+            y += 29;
+            Widgets.DrawLineHorizontal(0, y, rect.width);
+
+            y += 29;
             Widgets.CheckboxLabeled(new Rect(25, y, 200, 32), "InfiniteStorage.CollectThingsAutomatically".Translate(), ref collectThingsAutomatically);
 
             y += 40;
             if (collectThingsAutomatically)
             {
                 Widgets.Label(new Rect(25, y, 300, 32), "InfiniteStorage.TimeBetweenAutoCollects".Translate() + ":");
-                timeBetweenAutoCollectsUserInput = Widgets.TextField(new Rect(320, 255, 75, 32), timeBetweenAutoCollectsUserInput);
+                timeBetweenAutoCollectsUserInput = Widgets.TextField(new Rect(310, y - 6, 75, 32), timeBetweenAutoCollectsUserInput);
 
                 y += 40;
                 if (Widgets.ButtonText(new Rect(50, y, 100, 32), "Confirm".Translate()))
