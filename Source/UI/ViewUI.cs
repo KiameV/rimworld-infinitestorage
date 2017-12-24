@@ -97,10 +97,9 @@ namespace InfiniteStorage.UI
                                 Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
                             {
                                 this.ThingStorage.AllowAdds = false;
-                                Thing removed;
-                                if (this.ThingStorage.TryRemove(thing, thing.stackCount, out removed))
+                                if (this.ThingStorage.TryRemove(thing))
                                 {
-                                    BuildingUtil.DropThing(removed, removed.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
+                                    BuildingUtil.DropThing(thing, thing.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
                                 }
                                 break;
                             }
