@@ -29,6 +29,9 @@ namespace InfiniteStorage
         private const float DEFAULT_ENERGY_FACTOR = 1f;
         private const long DEFAULT_TIME_BETWEEN_COLLECTS_TICKS = 10 * TimeSpan.TicksPerSecond;
 
+        private static bool enableEnergyBuffer = true;
+        public static bool EnableEnergyBuffer { get { return enableEnergyBuffer; } }
+
         private static int desiredEnergyBuffer = DEFAULT_ENERGY_BUFFER;
         public static int DesiredEnergyBuffer { get { return desiredEnergyBuffer; } }
 
@@ -50,6 +53,7 @@ namespace InfiniteStorage
         {
             base.ExposeData();
 
+            Scribe_Values.Look<bool>(ref enableEnergyBuffer, "InfiniteStorage.EnableEnergyBuffer", true, false);
             Scribe_Values.Look<int>(ref desiredEnergyBuffer, "InfiniteStorage.DesiredEnergyBuffer", DEFAULT_ENERGY_BUFFER, false);
             Scribe_Values.Look<float>(ref energyFactor, "InfiniteStorage.EnergyFactor", DEFAULT_ENERGY_FACTOR, false);
             Scribe_Values.Look<bool>(ref collectThingsAutomatically, "InfiniteStorage.CollectThingsAutomatically", true, false);
@@ -59,27 +63,33 @@ namespace InfiniteStorage
         public static void DoSettingsWindowContents(Rect rect)
         {
             int y = 60;
-            desiredEnergyBufferUserInput = Widgets.TextEntryLabeled(new Rect(0, y, 300, 32), "InfiniteStorage.EnergyBuffer".Translate() + ":   ", desiredEnergyBufferUserInput);
+            Widgets.CheckboxLabeled(new Rect(0, y, 300, 32), "InfiniteStorage.EnableEnergyBuffer".Translate(), ref enableEnergyBuffer);
 
-            y += 50;
-            if (Widgets.ButtonText(new Rect(50, y, 100, 32), "Confirm".Translate()))
+            if (enableEnergyBuffer)
             {
-                int f;
-                if (!int.TryParse(desiredEnergyBufferUserInput, out f) || f < 0)
+                y += 40;
+                desiredEnergyBufferUserInput = Widgets.TextEntryLabeled(new Rect(0, y, 300, 32), "InfiniteStorage.EnergyBuffer".Translate() + ":   ", desiredEnergyBufferUserInput);
+
+                y += 50;
+                if (Widgets.ButtonText(new Rect(50, y, 100, 32), "Confirm".Translate()))
                 {
-                    Messages.Message("InfiniteStorage.NumberGreaterThanZero".Translate(), MessageTypeDefOf.RejectInput);
+                    int f;
+                    if (!int.TryParse(desiredEnergyBufferUserInput, out f) || f < 0)
+                    {
+                        Messages.Message("InfiniteStorage.NumberGreaterThanZero".Translate(), MessageTypeDefOf.RejectInput);
+                    }
+                    else
+                    {
+                        desiredEnergyBuffer = f;
+                        Messages.Message("InfiniteStorage.EnergyBufferSet".Translate().Replace("{v}", desiredEnergyBuffer.ToString()), MessageTypeDefOf.PositiveEvent);
+                    }
                 }
-                else
+                if (Widgets.ButtonText(new Rect(175, y, 100, 32), "default".Translate().CapitalizeFirst()))
                 {
-                    desiredEnergyBuffer = f;
+                    desiredEnergyBuffer = DEFAULT_ENERGY_BUFFER;
+                    desiredEnergyBufferUserInput = desiredEnergyBuffer.ToString();
                     Messages.Message("InfiniteStorage.EnergyBufferSet".Translate().Replace("{v}", desiredEnergyBuffer.ToString()), MessageTypeDefOf.PositiveEvent);
                 }
-            }
-            if (Widgets.ButtonText(new Rect(175, y, 100, 32), "default".Translate().CapitalizeFirst()))
-            {
-                desiredEnergyBuffer = DEFAULT_ENERGY_BUFFER;
-                desiredEnergyBufferUserInput = desiredEnergyBuffer.ToString();
-                Messages.Message("InfiniteStorage.EnergyBufferSet".Translate().Replace("{v}", desiredEnergyBuffer.ToString()), MessageTypeDefOf.PositiveEvent);
             }
 
             y += 50;

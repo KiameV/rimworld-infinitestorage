@@ -755,8 +755,8 @@ namespace InfiniteStorage
     }
 
     [HarmonyPatch(
-        typeof(CaravanExitMapUtility), "ExitMapAndCreateCaravan", 
-        new Type[] { typeof (IEnumerable<Pawn>), typeof (Faction), typeof(int), typeof(int) })]
+        typeof(CaravanExitMapUtility), "ExitMapAndCreateCaravan",
+        new Type[] { typeof(IEnumerable<Pawn>), typeof(Faction), typeof(int), typeof(int) })]
     static class Patch_CaravanExitMapUtility_ExitMapAndCreateCaravan_1
     {
         [HarmonyPriority(Priority.First)]
@@ -795,6 +795,28 @@ namespace InfiniteStorage
                         storage.Reclaim();
                     }
                 }
+            }
+        }
+    }
+    #endregion
+
+    #region Fix Broken Tool
+    [HarmonyPatch(typeof(WorkGiver_FixBrokenDownBuilding), "FindClosestComponent")]
+    static class Patch_WorkGiver_FixBrokenDownBuilding_FindClosestComponent
+    {
+        static void Postfix(Thing __result, Pawn pawn)
+        {
+            if (pawn != null && __result == null)
+            {
+                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
+                {
+                    Thing t;
+                    if (storage.TryRemove(ThingDefOf.Component, 1, out t))
+                    {
+                        BuildingUtil.DropThing(t, storage, storage.Map, false);
+                    }
+                }
+                __result = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.Component), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger(), TraverseMode.ByPawn, false), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x, 1, -1, null, false), null, 0, -1, false, RegionType.Set_Passable, false);
             }
         }
     }

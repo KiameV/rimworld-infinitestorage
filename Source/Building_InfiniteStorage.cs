@@ -181,7 +181,7 @@ namespace InfiniteStorage
             if (this.IsOperational && this.CanAutoCollect)
             {
                 float powerAvailable = 0;
-                if (this.UsesPower)
+                if (this.UsesPower && Settings.EnableEnergyBuffer)
                 {
                     powerAvailable = this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick;
                     if (powerAvailable <= Settings.DesiredEnergyBuffer)
@@ -193,7 +193,7 @@ namespace InfiniteStorage
 
                 foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
                 {
-                    if (this.UsesPower)
+                    if (this.UsesPower && Settings.EnableEnergyBuffer)
                     {
                         float newWeight = this.storedWeight + this.GetThingWeight(t, t.stackCount);
                         if (newWeight * Settings.EnergyFactor > powerAvailable)
@@ -241,7 +241,7 @@ namespace InfiniteStorage
                 return false;
             }
 
-            if (this.UsesPower)
+            if (this.UsesPower && Settings.EnableEnergyBuffer)
             {
                 if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick < 
                     Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
@@ -349,8 +349,13 @@ namespace InfiniteStorage
 
         public bool TryRemove(Thing thing, int count, out Thing removed)
         {
+            return this.TryRemove(thing.def, count, out removed);
+        }
+
+        public bool TryRemove(ThingDef def, int count, out Thing removed)
+        {
             LinkedList<Thing> l;
-            if (this.storedThings.TryGetValue(thing.def.label, out l))
+            if (this.storedThings.TryGetValue(def.label, out l))
             {
                 if (l.Count > 0)
                 {
@@ -361,7 +366,7 @@ namespace InfiniteStorage
                         l.RemoveFirst();
                         if (l.Count <= 0)
                         {
-                            this.storedThings.Remove(thing.def.label);
+                            this.storedThings.Remove(def.label);
                         }
                     }
                     else
