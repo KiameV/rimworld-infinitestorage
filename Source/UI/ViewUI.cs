@@ -3,6 +3,8 @@ using UnityEngine;
 using Verse;
 using System;
 using System.Text;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace InfiniteStorage.UI
 {
@@ -22,8 +24,6 @@ namespace InfiniteStorage.UI
             applyFiltersTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/filter", true);
         }
 
-        private readonly Building_InfiniteStorage ThingStorage;
-
         public static Texture2D BodyPartViewTexture;
         public static Texture2D TextileViewTexture;
         public static Texture2D InfiniteStorageViewTexture;
@@ -34,6 +34,23 @@ namespace InfiniteStorage.UI
         public static Texture2D noSellTexture;
         public static Texture2D applyFiltersTexture;
 
+        private enum Tabs
+        {
+            InfiniteStorage_Misc,
+            InfiniteStorage_Minified,
+            InfiniteStorage_Apparel,
+            InfiniteStorage_Weapons
+        };
+
+        private readonly Building_InfiniteStorage InfiniteStorage;
+        private List<Thing> Misc = new List<Thing>();
+        private List<Thing> Minified = new List<Thing>();
+        private List<Thing> Apparel = new List<Thing>();
+        private List<Thing> Weapons = new List<Thing>();
+
+        private List<TabRecord> tabs = new List<TabRecord>();
+        private Tabs selectedTab = Tabs.InfiniteStorage_Misc;
+
         private Vector2 scrollPosition = new Vector2(0, 0);
         private String searchText = "";
 
@@ -42,82 +59,99 @@ namespace InfiniteStorage.UI
 
         public ViewUI(Building_InfiniteStorage thingStorage)
         {
-            this.ThingStorage = thingStorage;
+            this.InfiniteStorage = thingStorage;
 
             this.closeOnEscapeKey = true;
             this.doCloseButton = true;
             this.doCloseX = true;
             this.absorbInputAroundWindow = true;
             this.forcePause = true;
+
+            this.PopulateDisplayThings();
         }
 
         public override Vector2 InitialSize
         {
             get
             {
-                return new Vector2(500f, 600f);
+                return new Vector2(500f, 650f);
             }
         }
 
-#if DEBUG
-        int i = 600;
-#endif
+        private void PopulateDisplayThings()
+        {
+            this.Misc.Clear();
+            this.Minified.Clear();
+            this.Apparel.Clear();
+            this.Weapons.Clear();
+            foreach(Thing t in this.InfiniteStorage.StoredThings)
+            {
+                if (t.def.IsApparel)
+                {
+                    this.Apparel.Add(t);
+                }
+                else if (t.def.IsWeapon && !t.def.defName.EqualsIgnoreCase("WoodLog"))
+                {
+                    this.Weapons.Add(t);
+                }
+                else if (t is MinifiedThing)
+                {
+                    this.Minified.Add(t);
+                }
+                else
+                {
+                    this.Misc.Add(t);
+                }
+            }
+        }
+
+        public override void PreClose()
+        {
+            base.PreClose();
+            this.Misc.Clear();
+            this.Minified.Clear();
+            this.Apparel.Clear();
+            this.Weapons.Clear();
+        }
+
         public override void DoWindowContents(Rect inRect)
         {
-#if DEBUG
-            ++i;
-#endif
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             try
             {
-#if DEBUG
-                StringBuilder sb = new StringBuilder("search for: " + searchText);
-#endif
-                this.searchText = Widgets.TextEntryLabeled(new Rect(20, 20, 300, 32), "InfiniteStorage.Search".Translate() + ": ", this.searchText);
+                this.searchText = Widgets.TextEntryLabeled(new Rect(20, 15, 300, 32), "InfiniteStorage.Search".Translate() + ": ", this.searchText).ToLower().Trim();
+                this.searchText = Regex.Replace(this.searchText, @"\t|\n|\r", "");
 
-                int rows = this.ThingStorage.DefsCount;
-                Rect r = new Rect(0, 52, 368, (rows + 1) * (HEIGHT + BUFFER));
-                scrollPosition = GUI.BeginScrollView(new Rect(50, 52, r.width + 18, inRect.height - 100), scrollPosition, r);
+                int y = 90;
+                int rows;
+                IEnumerable<Thing> thingsToShow = this.GetThingsToShow(out rows);
+
+                if (this.searchText.Length == 0)
+                {
+                    TabDrawer.DrawTabs(new Rect(0, y, inRect.width, inRect.height - y), this.tabs);
+                    y += 32;
+                }
+
+                Rect r = new Rect(0, y, 368, (rows + 1) * (HEIGHT + BUFFER));
+                scrollPosition = GUI.BeginScrollView(
+                    new Rect(50, y, r.width + 18, inRect.height - y - 75), scrollPosition, r);
                 int i = 0;
-                foreach (Thing thing in this.ThingStorage.StoredThings)
+                foreach (Thing thing in thingsToShow)
                 {
                     if (thing != null)
                     {
                         string label = this.FormatLabel(thing);
-                        if (searchText.Length == 0 || label.Contains(searchText))
+                        if (searchText.Length == 0 || label.ToLower().Contains(searchText))
                         {
-                            GUI.BeginGroup(new Rect(0, 22 + i * (HEIGHT + BUFFER), r.width, HEIGHT));
-
-                            Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
-
-                            Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), label);
-
-                            if (this.ThingStorage.IsOperational &&
-                                Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
+                            if (this.DrawRow(thing, label, y, i, r))
                             {
-                                this.ThingStorage.AllowAdds = false;
-                                if (this.ThingStorage.TryRemove(thing))
-                                {
-                                    BuildingUtil.DropThing(thing, thing.stackCount, this.ThingStorage, this.ThingStorage.Map, false);
-                                }
                                 break;
                             }
-                            GUI.EndGroup();
                             ++i;
                         }
-#if DEBUG
-                        else
-                        {
-                            sb.Append("[" + thing.def.label + "], ");
-                        }
-#endif
                     }
                 }
-
-#if DEBUG
-                Log.Warning(sb.ToString());
-#endif
                 GUI.EndScrollView();
             }
             catch (Exception e)
@@ -132,6 +166,29 @@ namespace InfiniteStorage.UI
                 Text.Anchor = TextAnchor.UpperLeft;
                 GUI.color = Color.white;
             }
+        }
+
+        private bool DrawRow(Thing thing, String label, float y, int i, Rect r)
+        {
+            GUI.BeginGroup(new Rect(0, y + i * (HEIGHT + BUFFER), r.width, HEIGHT));
+
+            Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
+
+            Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), label);
+
+            if (this.InfiniteStorage.IsOperational &&
+                Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
+            {
+                this.InfiniteStorage.AllowAdds = false;
+                if (this.InfiniteStorage.TryRemove(thing))
+                {
+                    BuildingUtil.DropThing(thing, thing.stackCount, this.InfiniteStorage, this.InfiniteStorage.Map, false);
+                }
+                this.PopulateDisplayThings();
+                return true;
+            }
+            GUI.EndGroup();
+            return false;
         }
 
         private string FormatLabel(Thing t)
@@ -153,6 +210,58 @@ namespace InfiniteStorage.UI
                 sb.Append(t.stackCount);
             }
             return sb.ToString();
+        }
+
+        private IEnumerable<Thing> GetThingsToShow(out int rows)
+        {
+            IEnumerable<Thing> thingsToShow;
+            if (this.searchText.Length > 0)
+            {
+                thingsToShow = this.InfiniteStorage.StoredThings;
+                rows = this.InfiniteStorage.DefsCount;
+            }
+            else
+            {
+                this.tabs.Clear();
+                this.tabs.Add(new TabRecord(
+                    Tabs.InfiniteStorage_Misc.ToString().Translate(),
+                    delegate { this.selectedTab = Tabs.InfiniteStorage_Misc; },
+                    this.selectedTab == Tabs.InfiniteStorage_Misc));
+                this.tabs.Add(new TabRecord(
+                    Tabs.InfiniteStorage_Minified.ToString().Translate(),
+                    delegate { this.selectedTab = Tabs.InfiniteStorage_Minified; },
+                    this.selectedTab == Tabs.InfiniteStorage_Minified));
+                this.tabs.Add(new TabRecord(
+                    Tabs.InfiniteStorage_Apparel.ToString().Translate(),
+                    delegate { this.selectedTab = Tabs.InfiniteStorage_Apparel; },
+                    this.selectedTab == Tabs.InfiniteStorage_Apparel));
+                this.tabs.Add(new TabRecord(
+                    Tabs.InfiniteStorage_Weapons.ToString().Translate(),
+                    delegate { this.selectedTab = Tabs.InfiniteStorage_Weapons; },
+                    this.selectedTab == Tabs.InfiniteStorage_Weapons));
+
+                if (this.selectedTab == Tabs.InfiniteStorage_Misc)
+                {
+                    thingsToShow = this.Misc;
+                    rows = this.Misc.Count;
+                }
+                else if (this.selectedTab == Tabs.InfiniteStorage_Minified)
+                {
+                    thingsToShow = this.Minified;
+                    rows = this.Minified.Count;
+                }
+                else if (this.selectedTab == Tabs.InfiniteStorage_Apparel)
+                {
+                    thingsToShow = this.Apparel;
+                    rows = this.Apparel.Count;
+                }
+                else
+                {
+                    thingsToShow = this.Weapons;
+                    rows = this.Weapons.Count;
+                }
+            }
+            return thingsToShow;
         }
     }
 }

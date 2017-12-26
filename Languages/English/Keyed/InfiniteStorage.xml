@@ -18,6 +18,10 @@
 	
 	<!-- 'View' Dialog Window -->
 	<InfiniteStorage.Search>Search</InfiniteStorage.Search>
+	<InfiniteStorage_Misc>Misc</InfiniteStorage_Misc>
+	<InfiniteStorage_Minified>Minified</InfiniteStorage_Minified>
+	<InfiniteStorage_Apparel>Apparel</InfiniteStorage_Apparel>
+	<InfiniteStorage_Weapons>Weapons</InfiniteStorage_Weapons>
 	
 	<!-- Settings Page -->
 	<InfiniteStorage>Infinite Storage</InfiniteStorage>
