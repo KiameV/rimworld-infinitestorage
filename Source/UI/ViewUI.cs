@@ -36,6 +36,7 @@ namespace InfiniteStorage.UI
 
         private enum Tabs
         {
+            Unknown,
             InfiniteStorage_Misc,
             InfiniteStorage_Minified,
             InfiniteStorage_Apparel,
@@ -103,6 +104,26 @@ namespace InfiniteStorage.UI
                     this.Misc.Add(t);
                 }
             }
+
+            if ((this.selectedTab == Tabs.InfiniteStorage_Misc && this.Misc.Count == 0) || 
+                (this.selectedTab == Tabs.InfiniteStorage_Minified && this.Minified.Count == 0) || 
+                (this.selectedTab == Tabs.InfiniteStorage_Apparel && this.Apparel.Count == 0) || 
+                (this.selectedTab == Tabs.InfiniteStorage_Weapons && this.Weapons.Count == 0))
+            {
+                this.selectedTab = Tabs.Unknown;
+            }
+
+            if (this.selectedTab == Tabs.Unknown)
+            {
+                if (this.Misc.Count > 0)
+                    this.selectedTab = Tabs.InfiniteStorage_Misc;
+                else if (this.Minified.Count > 0)
+                    this.selectedTab = Tabs.InfiniteStorage_Minified;
+                else if (this.Apparel.Count > 0)
+                    this.selectedTab = Tabs.InfiniteStorage_Apparel;
+                else if (this.Weapons.Count > 0)
+                    this.selectedTab = Tabs.InfiniteStorage_Weapons;
+            }
         }
 
         public override void PreClose()
@@ -120,12 +141,17 @@ namespace InfiniteStorage.UI
             Text.Font = GameFont.Small;
             try
             {
-                this.searchText = Widgets.TextEntryLabeled(new Rect(20, 15, 300, 32), "InfiniteStorage.Search".Translate() + ": ", this.searchText).ToLower().Trim();
-                this.searchText = Regex.Replace(this.searchText, @"\t|\n|\r", "");
-
                 int y = 90;
                 int rows;
                 IEnumerable<Thing> thingsToShow = this.GetThingsToShow(out rows);
+
+                if (rows == 0)
+                {
+                    return;
+                }
+
+                this.searchText = Widgets.TextEntryLabeled(new Rect(20, 15, 300, 32), "InfiniteStorage.Search".Translate() + ": ", this.searchText).ToLower().Trim();
+                this.searchText = Regex.Replace(this.searchText, @"\t|\n|\r", "");
 
                 if (this.searchText.Length == 0)
                 {
@@ -223,22 +249,34 @@ namespace InfiniteStorage.UI
             else
             {
                 this.tabs.Clear();
-                this.tabs.Add(new TabRecord(
-                    Tabs.InfiniteStorage_Misc.ToString().Translate(),
-                    delegate { this.selectedTab = Tabs.InfiniteStorage_Misc; },
-                    this.selectedTab == Tabs.InfiniteStorage_Misc));
-                this.tabs.Add(new TabRecord(
-                    Tabs.InfiniteStorage_Minified.ToString().Translate(),
-                    delegate { this.selectedTab = Tabs.InfiniteStorage_Minified; },
-                    this.selectedTab == Tabs.InfiniteStorage_Minified));
-                this.tabs.Add(new TabRecord(
-                    Tabs.InfiniteStorage_Apparel.ToString().Translate(),
-                    delegate { this.selectedTab = Tabs.InfiniteStorage_Apparel; },
-                    this.selectedTab == Tabs.InfiniteStorage_Apparel));
-                this.tabs.Add(new TabRecord(
-                    Tabs.InfiniteStorage_Weapons.ToString().Translate(),
-                    delegate { this.selectedTab = Tabs.InfiniteStorage_Weapons; },
-                    this.selectedTab == Tabs.InfiniteStorage_Weapons));
+                if (this.Misc.Count > 0)
+                {
+                    this.tabs.Add(new TabRecord(
+                        Tabs.InfiniteStorage_Misc.ToString().Translate(),
+                        delegate { this.selectedTab = Tabs.InfiniteStorage_Misc; },
+                        this.selectedTab == Tabs.InfiniteStorage_Misc));
+                }
+                if (this.Minified.Count > 0)
+                {
+                    this.tabs.Add(new TabRecord(
+                        Tabs.InfiniteStorage_Minified.ToString().Translate(),
+                        delegate { this.selectedTab = Tabs.InfiniteStorage_Minified; },
+                        this.selectedTab == Tabs.InfiniteStorage_Minified));
+                }
+                if (this.Apparel.Count > 0)
+                {
+                    this.tabs.Add(new TabRecord(
+                        Tabs.InfiniteStorage_Apparel.ToString().Translate(),
+                        delegate { this.selectedTab = Tabs.InfiniteStorage_Apparel; },
+                        this.selectedTab == Tabs.InfiniteStorage_Apparel));
+                }
+                if (this.Weapons.Count > 0)
+                {
+                    this.tabs.Add(new TabRecord(
+                        Tabs.InfiniteStorage_Weapons.ToString().Translate(),
+                        delegate { this.selectedTab = Tabs.InfiniteStorage_Weapons; },
+                        this.selectedTab == Tabs.InfiniteStorage_Weapons));
+                }
 
                 if (this.selectedTab == Tabs.InfiniteStorage_Misc)
                 {
