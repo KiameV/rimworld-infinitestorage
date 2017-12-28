@@ -58,6 +58,9 @@ namespace InfiniteStorage.UI
         const int HEIGHT = 30;
         const int BUFFER = 2;
 
+        private static ThingCategoryDef WeaponsMeleeCategoryDef = null;
+        private static ThingCategoryDef WeaponsRangedCategoryDef = null;
+
         public ViewUI(Building_InfiniteStorage thingStorage)
         {
             this.InfiniteStorage = thingStorage;
@@ -81,17 +84,42 @@ namespace InfiniteStorage.UI
 
         private void PopulateDisplayThings()
         {
+            if (WeaponsMeleeCategoryDef == null)
+            {
+                foreach (ThingCategoryDef d in DefDatabase<ThingCategoryDef>.AllDefsListForReading)
+                {
+                    if (WeaponsMeleeCategoryDef != null && WeaponsRangedCategoryDef != null)
+                        break;
+                    else if (d.defName.EqualsIgnoreCase("WeaponsMelee"))
+                        WeaponsMeleeCategoryDef = d;
+                    else if (d.defName.EqualsIgnoreCase("WeaponsRanged"))
+                        WeaponsRangedCategoryDef = d;
+                }
+            }
+
             this.Misc.Clear();
             this.Minified.Clear();
             this.Apparel.Clear();
             this.Weapons.Clear();
             foreach(Thing t in this.InfiniteStorage.StoredThings)
             {
+#if DEBUG
+                StringBuilder sb = new StringBuilder("Thing: " + t.def.label + " [");
+                foreach (ThingCategoryDef d in t.def.thingCategories)
+                {
+                    sb.Append(d.label + ", ");
+                }
+                sb.Append("]");
+                sb.Append(" is Melee: " + t.def.thingCategories.Contains(WeaponsMeleeCategoryDef));
+                sb.Append(" is Ranged: " + t.def.thingCategories.Contains(WeaponsRangedCategoryDef));
+                Log.Warning(sb.ToString());
+#endif
                 if (t.def.IsApparel)
                 {
                     this.Apparel.Add(t);
                 }
-                else if (t.def.IsWeapon && !t.def.defName.EqualsIgnoreCase("WoodLog"))
+                else if (t.def.thingCategories.Contains(WeaponsMeleeCategoryDef) || 
+                         t.def.thingCategories.Contains(WeaponsRangedCategoryDef))
                 {
                     this.Weapons.Add(t);
                 }
@@ -219,10 +247,14 @@ namespace InfiniteStorage.UI
 
         private string FormatLabel(Thing t)
         {
-            if (t is MinifiedThing)
+            if (t is MinifiedThing || 
+                t.def.IsApparel ||
+                t.def.thingCategories.Contains(WeaponsMeleeCategoryDef) ||
+                t.def.thingCategories.Contains(WeaponsRangedCategoryDef))
             {
                 return t.Label;
             }
+
             StringBuilder sb = new StringBuilder(t.def.label);
             if (t.Stuff != null)
             {

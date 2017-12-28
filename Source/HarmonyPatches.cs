@@ -329,27 +329,30 @@ namespace InfiniteStorage
             List<ThingsToUse> thingsToUse = new List<ThingsToUse>();
             foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(bill.Map))
             {
-                LinkedListNode<NeededIngrediants> n = neededIngs.First;
-                while (n != null)
+                if ((float)(storage.Position - billGiver.Position).LengthHorizontalSquared < Math.Pow(bill.ingredientSearchRadius, 2))
                 {
-                    var next = n.Next;
-                    NeededIngrediants neededIng = n.Value;
-
-                    List<Thing> gotten;
-                    if (storage.TryGetFilteredThings(neededIng.Filter, out gotten))
+                    LinkedListNode<NeededIngrediants> n = neededIngs.First;
+                    while (n != null)
                     {
-                        foreach (Thing got in gotten)
+                        var next = n.Next;
+                        NeededIngrediants neededIng = n.Value;
+
+                        List<Thing> gotten;
+                        if (storage.TryGetFilteredThings(bill, out gotten))
                         {
-                            int count = (got.stackCount > neededIng.Count) ? neededIng.Count : got.stackCount;
-                            thingsToUse.Add(new ThingsToUse(storage, got, count));
-                            neededIng.Count -= count;
+                            foreach (Thing got in gotten)
+                            {
+                                int count = (got.stackCount > neededIng.Count) ? neededIng.Count : got.stackCount;
+                                thingsToUse.Add(new ThingsToUse(storage, got, count));
+                                neededIng.Count -= count;
+                            }
+                            if (neededIng.Count == 0)
+                            {
+                                neededIngs.Remove(n);
+                            }
                         }
-                        if (neededIng.Count == 0)
-                        {
-                            neededIngs.Remove(n);
-                        }
+                        n = next;
                     }
-                    n = next;
                 }
             }
 

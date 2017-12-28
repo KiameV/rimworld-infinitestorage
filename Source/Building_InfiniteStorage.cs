@@ -296,14 +296,14 @@ namespace InfiniteStorage
             return thing.GetStatValue(StatDefOf.Mass, true) * count;
         }
 
-        public bool TryGetFilteredThings(ThingFilter filter, out List<Thing> gotten)
+        public bool TryGetFilteredThings(Bill bill, out List<Thing> gotten)
         {
             gotten = null;
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
                 foreach (Thing t in l)
                 {
-                    if (filter.Allows(t))
+                    if (bill.IsFixedOrAllowedIngredient(t))
                     {
                         if (gotten == null)
                         {
