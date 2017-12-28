@@ -13,6 +13,12 @@
   <InfiniteStorage.ApplyFiltersDesc>過濾已存儲的物品（將不符合存儲過濾器的物品放到地上）。</InfiniteStorage.ApplyFiltersDesc>
   <InfiniteStorage.View>查看庫存</InfiniteStorage.View>
   <InfiniteStorage.ViewDesc>查看已存儲的物品。</InfiniteStorage.ViewDesc>
+  <!-- 'View' Dialog Window -->
+  <InfiniteStorage.Search>搜索</InfiniteStorage.Search>
+  <InfiniteStorage_Misc>雜項</InfiniteStorage_Misc>
+  <InfiniteStorage_Minified>傢具</InfiniteStorage_Minified>
+  <InfiniteStorage_Apparel>服裝</InfiniteStorage_Apparel>
+  <InfiniteStorage_Weapons>武器</InfiniteStorage_Weapons>
   <!-- Settings Page -->
   <InfiniteStorage>無限制存儲箱</InfiniteStorage>
   <InfiniteStorage.EnergyFactor>功率倍數</InfiniteStorage.EnergyFactor>
@@ -22,5 +28,9 @@
   <InfiniteStorage.TimeBetweenAutoCollects>自動收集物品的間隔時間（秒）</InfiniteStorage.TimeBetweenAutoCollects>
   <InfiniteStorage.TimeBetweenAutoCollectsSet>自動收集物品的間隔設置為{v}秒。</InfiniteStorage.TimeBetweenAutoCollectsSet>
   <InfiniteStorage.NumberGreaterThanZero>必須是大於0的數字。</InfiniteStorage.NumberGreaterThanZero>
+  <InfiniteStorage.EnableEnergyBuffer>起用能量緩衝器</InfiniteStorage.EnableEnergyBuffer>
+  <InfiniteStorage.EnergyBuffer>能量緩衝器（W）</InfiniteStorage.EnergyBuffer>
+  <InfiniteStorage.EnergyBufferSet>能量緩衝器設定為{v}</InfiniteStorage.EnergyBufferSet>
+  <InfiniteStorage.EnergyBufferDesc>如果電網功率小於給定數值，無限制存儲箱將不會接受物品。</InfiniteStorage.EnergyBufferDesc>
   <!--<InfiniteStorage.EnergyFactorNumberGreaterThanZero>必須是大於0的數字。</InfiniteStorage.EnergyFactorNumberGreaterThanZero>-->
 </LanguageData>
