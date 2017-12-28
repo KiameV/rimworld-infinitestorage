@@ -16,6 +16,13 @@
 	<InfiniteStorage.View>View Storage</InfiniteStorage.View>
 	<InfiniteStorage.ViewDesc>View the items stored.</InfiniteStorage.ViewDesc>
 	
+	<!-- 'View' Dialog Window -->
+	<InfiniteStorage.Search>Search</InfiniteStorage.Search>
+	<InfiniteStorage_Misc>Misc</InfiniteStorage_Misc>
+	<InfiniteStorage_Minified>Minified</InfiniteStorage_Minified>
+	<InfiniteStorage_Apparel>Apparel</InfiniteStorage_Apparel>
+	<InfiniteStorage_Weapons>Weapons</InfiniteStorage_Weapons>
+	
 	<!-- Settings Page -->
 	<InfiniteStorage>Infinite Storage</InfiniteStorage>
 	<InfiniteStorage.EnergyFactor>Energy Factor</InfiniteStorage.EnergyFactor>
@@ -25,4 +32,8 @@
 	<InfiniteStorage.TimeBetweenAutoCollects>Time Between Auto-Collects in Seconds</InfiniteStorage.TimeBetweenAutoCollects>
 	<InfiniteStorage.TimeBetweenAutoCollectsSet>Time Between Auto-Collects set to {v}.</InfiniteStorage.TimeBetweenAutoCollectsSet>
 	<InfiniteStorage.NumberGreaterThanZero>Must be a number greater than 0.</InfiniteStorage.NumberGreaterThanZero>
+	<InfiniteStorage.EnableEnergyBuffer>Enable Energy Buffer</InfiniteStorage.EnableEnergyBuffer>
+	<InfiniteStorage.EnergyBuffer>Energy Buffer (W)</InfiniteStorage.EnergyBuffer>
+	<InfiniteStorage.EnergyBufferSet>Energy buffer set to {v}</InfiniteStorage.EnergyBufferSet>
+	<InfiniteStorage.EnergyBufferDesc>Infinite Storage will stop adding things if the colony's excess energy is under the given number.</InfiniteStorage.EnergyBufferDesc>
 </LanguageData>

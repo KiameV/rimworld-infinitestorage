@@ -1,9 +1,7 @@
 ﻿using InfiniteStorage.UI;
 using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -44,6 +42,8 @@ namespace InfiniteStorage
         public bool UsesPower { get { return this.compPowerTrader != null; } }
         public bool IsOperational { get { return this.compPowerTrader == null || this.compPowerTrader.PowerOn; } }
 
+        public bool CanAutoCollect { get; set; }
+
         private long lastAutoReclaim = 0;
 
         private List<Thing> ToDumpOnSpawn = null;
@@ -56,6 +56,7 @@ namespace InfiniteStorage
         public Building_InfiniteStorage()
         {
             this.AllowAdds = true;
+            this.CanAutoCollect = true;
         }
 
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -70,7 +71,7 @@ namespace InfiniteStorage
                 base.settings.filter.SetDisallowAll();
             }
 
-            WorldComp.Add(this);
+            WorldComp.Add(map, this);
 
             this.compPowerTrader = this.GetComp<CompPowerTrader>();
 
@@ -139,7 +140,7 @@ namespace InfiniteStorage
                     e.StackTrace);
             }
 
-            WorldComp.Remove(this);
+            WorldComp.Remove(this.CurrentMap, this);
         }
 
         private void DropThing(Thing t, bool makeForbidden = true)
@@ -177,10 +178,29 @@ namespace InfiniteStorage
 
         public void Reclaim(bool respectReserved = false)
         {
-            if (this.IsOperational)
+            if (this.IsOperational && this.CanAutoCollect)
             {
+                float powerAvailable = 0;
+                if (this.UsesPower && Settings.EnableEnergyBuffer)
+                {
+                    powerAvailable = this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick;
+                    if (powerAvailable <= Settings.DesiredEnergyBuffer)
+                    {
+                        return;
+                    }
+                    powerAvailable -= Settings.DesiredEnergyBuffer;
+                }
+
                 foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
                 {
+                    if (this.UsesPower && Settings.EnableEnergyBuffer)
+                    {
+                        float newWeight = this.storedWeight + this.GetThingWeight(t, t.stackCount);
+                        if (newWeight * Settings.EnergyFactor > powerAvailable)
+                        {
+                            continue;
+                        }
+                    }
                     this.Add(t);
                 }
             }
@@ -219,6 +239,15 @@ namespace InfiniteStorage
                 !this.IsOperational)
             {
                 return false;
+            }
+
+            if (this.UsesPower && Settings.EnableEnergyBuffer)
+            {
+                if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick < 
+                    Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
+                {
+                    return false;
+                }
             }
 
             if (thing.stackCount == 0)
@@ -262,14 +291,19 @@ namespace InfiniteStorage
             return true;
         }
 
-        public bool TryGetFilteredThings(ThingFilter filter, out List<Thing> gotten)
+        private float GetThingWeight(Thing thing, int count)
+        {
+            return thing.GetStatValue(StatDefOf.Mass, true) * count;
+        }
+
+        public bool TryGetFilteredThings(Bill bill, ThingFilter filter, out List<Thing> gotten)
         {
             gotten = null;
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
                 foreach (Thing t in l)
                 {
-                    if (filter.Allows(t))
+                    if (bill.IsFixedOrAllowedIngredient(t) && filter.Allows(t))
                     {
                         if (gotten == null)
                         {
@@ -301,7 +335,7 @@ namespace InfiniteStorage
         {
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
-                if (l.Count > 0 &&
+                if (l.Count > 0 && 
                     filter.Allows(l.First.Value.def))
                 {
                     Thing t = l.First.Value;
@@ -313,10 +347,25 @@ namespace InfiniteStorage
             return false;
         }
 
-        public bool TryRemove(Thing thing, int count, out Thing removed)
+        public bool TryRemove(Thing thing)
         {
             LinkedList<Thing> l;
             if (this.storedThings.TryGetValue(thing.def.label, out l))
+            {
+                return l.Remove(thing);
+            }
+            return false;
+        }
+
+        public bool TryRemove(Thing thing, int count, out Thing removed)
+        {
+            return this.TryRemove(thing.def, count, out removed);
+        }
+
+        public bool TryRemove(ThingDef def, int count, out Thing removed)
+        {
+            LinkedList<Thing> l;
+            if (this.storedThings.TryGetValue(def.label, out l))
             {
                 if (l.Count > 0)
                 {
@@ -325,9 +374,9 @@ namespace InfiniteStorage
                     {
                         count = removed.stackCount;
                         l.RemoveFirst();
-                        if (l.Count == 0)
+                        if (l.Count <= 0)
                         {
-                            this.storedThings.Remove(thing.def.label);
+                            this.storedThings.Remove(def.label);
                         }
                     }
                     else
@@ -341,17 +390,13 @@ namespace InfiniteStorage
             removed = null;
             return false;
         }
-
-        //const int MAX_COUNT_BEFORE_RECALC = 30;
-        //int countSinceLastUpdate = 0;
+        
         private void UpdateStoredStats(Thing thing, int count, bool force = false)
         {
             this.storedCount += count;
-            this.storedWeight += thing.GetStatValue(StatDefOf.Mass, true) * count;
-            //++countSinceLastUpdate;
-            if (this.storedWeight < 0)// || MAX_COUNT_BEFORE_RECALC < countSinceLastUpdate)
+            this.storedWeight += this.GetThingWeight(thing, count);
+            if (this.storedWeight < 0)
             {
-                //countSinceLastUpdate = 0;
                 this.storedCount = 0;
                 this.storedWeight = 0;
                 foreach (LinkedList<Thing> l in this.storedThings.Values)
@@ -472,7 +517,7 @@ namespace InfiniteStorage
             }
 
             long now = DateTime.Now.Ticks;
-            if (Settings.CollectThingsAutomatically && 
+            if (Settings.CollectThingsAutomatically &&
                 now - this.lastAutoReclaim > Settings.TimeBetweenAutoCollectsTicks)
             {
                 this.Reclaim(true);
@@ -523,7 +568,10 @@ namespace InfiniteStorage
                     defaultDesc = "InfiniteStorage.CollectDesc".Translate(),
                     defaultLabel = "InfiniteStorage.Collect".Translate(),
                     activateSound = SoundDef.Named("Click"),
-                    action = delegate { this.Reclaim(); },
+                    action = delegate {
+                        this.CanAutoCollect = true;
+                        this.Reclaim();
+                    },
                     groupKey = key
                 });
                 ++key;
@@ -542,7 +590,7 @@ namespace InfiniteStorage
 
             l.Add(new Command_Action
             {
-                //icon = ViewUI.applyFilters,
+                icon = ViewUI.applyFiltersTexture,
                 defaultDesc = "InfiniteStorage.ApplyFiltersDesc".Translate(),
                 defaultLabel = "InfiniteStorage.ApplyFilters".Translate(),
                 activateSound = SoundDef.Named("Click"),
