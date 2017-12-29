@@ -361,6 +361,18 @@ namespace InfiniteStorage
             return false;
         }
 
+        public bool TryRemove(ThingDef def, out IEnumerable<Thing> removed)
+        {
+            LinkedList<Thing> l;
+            if (this.storedThings.TryGetValue(def.label, out l))
+            {
+                removed = l;
+                return true;
+            }
+            removed = null;
+            return false;
+        }
+
         public bool TryRemove(Thing thing, int count, out Thing removed)
         {
             return this.TryRemove(thing.def, count, out removed);
