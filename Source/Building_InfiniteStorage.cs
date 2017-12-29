@@ -301,15 +301,19 @@ namespace InfiniteStorage
             gotten = null;
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
-                foreach (Thing t in l)
+                if (l.Count > 0 &&
+                    bill.IsFixedOrAllowedIngredient(l.First.Value.def) && filter.Allows(l.First.Value.def))
                 {
-                    if (bill.IsFixedOrAllowedIngredient(t) && filter.Allows(t))
+                    foreach (Thing t in l)
                     {
-                        if (gotten == null)
+                        if (bill.IsFixedOrAllowedIngredient(t) && filter.Allows(t))
                         {
-                            gotten = new List<Thing>();
+                            if (gotten == null)
+                            {
+                                gotten = new List<Thing>();
+                            }
+                            gotten.Add(t);
                         }
-                        gotten.Add(t);
                     }
                 }
             }

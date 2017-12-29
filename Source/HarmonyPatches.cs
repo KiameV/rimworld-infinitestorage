@@ -19,14 +19,17 @@ namespace InfiniteStorage
             var harmony = HarmonyInstance.Create("com.InfiniteStorage.rimworld.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            Log.Message("InfiniteStorage: Adding Harmony Postfix to Pawn_TraderTracker.DrawMedOperationsTab");
-            Log.Message("InfiniteStorage: Adding Harmony Postfix to Pawn_TraderTracker.ThingsInGroup");
-            Log.Message("InfiniteStorage: Adding Harmony Postfix to Pawn_TraderTracker.ColonyThingsWillingToBuy");
-            Log.Message("InfiniteStorage: Adding Harmony Postfix to TradeShip.ColonyThingsWillingToBuy");
-            Log.Message("InfiniteStorage: Adding Harmony Postfix to Window.PreClose");
-            Log.Message("InfiniteStorage: Adding Harmony Postfix to WorkGiver_DoBill.TryFindBestBillIngredients");
-            Log.Message("InfiniteStorage: Adding Harmony Postfix to ReservationManager.CanReserve");
-            Log.Message("InfiniteStorage: Adding Harmony Prefix to Designator_Build.ProcessInput - will block if looking for things.");
+            Log.Message(
+               "InfiniteStorage Harmony Patches:" + Environment.NewLine +
+               "  Prefix:" + Environment.NewLine +
+               "    Designator_Build.ProcessInput - will block if looking for things." + Environment.NewLine +
+               "  Postfix:" + Environment.NewLine +
+               "    Pawn_TraderTracker.DrawMedOperationsTab" + Environment.NewLine +
+               "    Pawn_TraderTracker.ThingsInGroup" + Environment.NewLine +
+               "    Pawn_TraderTracker.ColonyThingsWillingToBuy" + Environment.NewLine +
+               "    TradeShip.ColonyThingsWillingToBuy" + Environment.NewLine +
+               "    Window.PreClose" + Environment.NewLine +
+               "    WorkGiver_DoBill.TryFindBestBillIngredients");
         }
     }
 
