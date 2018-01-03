@@ -72,38 +72,37 @@ namespace InfiniteStorage
         static class Patch_HealthCardUtility_DrawMedOperationsTab
         {
             [HarmonyPriority(Priority.First)]
-            static void Prefix(Pawn pawn)
+            static void Prefix()
             {
-                if (pawn == null)
-                    return;
-
-                if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing != null)
+                if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Count > 0)
                 {
                     Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
                 }
 
-                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing = new List<Thing>();
-                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
+#if MED_DEBUG
+                Log.Warning("HealthCardUtility.DrawMedOperationsTab");
+#endif
+                Map map = Find.VisibleMap;
+                if (map != null)
                 {
-                    if (storage.IsOperational && storage.Map == pawn.Map)
+#if MED_DEBUG
+                    Log.Warning("    Map is not null: " + (map != null).ToString());
+#endif
+                    foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
                     {
-                        foreach (Thing t in storage.StoredThings)
-                        {
-                            if (t.def.IsDrug || t.def.isBodyPartOrImplant)
-                            {
-                                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(storage.StoredThings);
-                            }
-                        }
+#if MED_DEBUG
+                        Log.Warning("    Storage: " + storage.Label);
+#endif
+                        Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(storage.GetMedicalThings(true, false));
                     }
                 }
             }
 
             static void Postfix()
             {
-                if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing != null)
+                if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Count > 0)
                 {
                     Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
-                    Patch_ListerThings_ThingsInGroup.AvailableMedicalThing = null;
                 }
             }
         }
@@ -111,11 +110,18 @@ namespace InfiniteStorage
         [HarmonyPatch(typeof(ListerThings), "ThingsInGroup")]
         static class Patch_ListerThings_ThingsInGroup
         {
-            public static List<Thing> AvailableMedicalThing = null;
+            public readonly static List<Thing> AvailableMedicalThing = new List<Thing>();
             static void Postfix(ref List<Thing> __result, ThingRequestGroup group)
             {
-                if (AvailableMedicalThing != null)
+#if MED_DEBUG
+                Log.Warning("ListerThings.ThingsInGroup");
+#endif
+                if (AvailableMedicalThing.Count > 0)
                 {
+#if MED_DEBUG
+                    foreach(Thing t in AvailableMedicalThing)
+                        Log.Warning("    " + t.Label);
+#endif
                     __result.AddRange(AvailableMedicalThing);
                 }
             }

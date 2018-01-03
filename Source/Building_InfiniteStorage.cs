@@ -161,10 +161,6 @@ namespace InfiniteStorage
                     {
                         BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false, droppedThings);
                     }
-#if DEBUG
-                    else
-                        Log.Message("Empty " + t.Label + " has 0 stack count");
-#endif
                 }
                 this.storedCount = 0;
                 this.storedWeight = 0;
@@ -287,7 +283,7 @@ namespace InfiniteStorage
                 l.AddFirst(thing);
                 this.storedThings.Add(thing.def.label, l);
             }
-            this.UpdateStoredStats(thing, thingsAdded);
+            this.UpdateStoredStats(thing, thingsAdded, true);
             return true;
         }
 
@@ -376,7 +372,11 @@ namespace InfiniteStorage
             LinkedList<Thing> l;
             if (this.storedThings.TryGetValue(thing.def.label, out l))
             {
-                return l.Remove(thing);
+                if (l.Remove(thing))
+                {
+                    this.UpdateStoredStats(thing, thing.stackCount, false);
+                    return true;
+                }
             }
             return false;
         }
@@ -388,6 +388,10 @@ namespace InfiniteStorage
             {
                 this.storedThings.Remove(def.label);
                 removed = l;
+                foreach (Thing t in l)
+                {
+                    this.UpdateStoredStats(t, t.stackCount, false);
+                }
                 return true;
             }
             removed = null;
@@ -413,6 +417,7 @@ namespace InfiniteStorage
                         l.RemoveFirst();
                         if (l.Count <= 0)
                         {
+
                             this.storedThings.Remove(def.label);
                         }
                     }
@@ -420,7 +425,7 @@ namespace InfiniteStorage
                     {
                         removed = removed.SplitOff(count);
                     }
-                    this.UpdateStoredStats(removed, -1 * count);
+                    this.UpdateStoredStats(removed, count, false);
                     return true;
                 }
             }
@@ -428,10 +433,16 @@ namespace InfiniteStorage
             return false;
         }
         
-        private void UpdateStoredStats(Thing thing, int count, bool force = false)
+        private void UpdateStoredStats(Thing thing, int count, bool isAdding, bool force = false)
         {
+            float weight = this.GetThingWeight(thing, count);
+            if (!isAdding)
+            {
+                weight *= -1;
+                count *= -1;
+            }
             this.storedCount += count;
-            this.storedWeight += this.GetThingWeight(thing, count);
+            this.storedWeight += weight;
             if (this.storedWeight < 0)
             {
                 this.storedCount = 0;
@@ -440,7 +451,7 @@ namespace InfiniteStorage
                 {
                     foreach (Thing t in l)
                     {
-                        this.UpdateStoredStats(thing, count, true);
+                        this.UpdateStoredStats(thing, count, true, true);
                     }
                 }
             }
@@ -681,7 +692,9 @@ namespace InfiniteStorage
 #region ThingFilters
         public void ApplyFilters()
         {
-            List<Thing> removed = new List<Thing>();
+            this.Empty();
+            this.Reclaim();
+            /*List<Thing> removed = new List<Thing>();
             List<string> keysToRemove = new List<string>();
             foreach (KeyValuePair<string, LinkedList<Thing>> kv in this.storedThings)
             {
@@ -708,6 +721,14 @@ namespace InfiniteStorage
             
             foreach (string key in keysToRemove)
             {
+                LinkedList<Thing> l;
+                if (this.storedThings.TryGetValue(key, out l))
+                {
+                    foreach(Thing t in l)
+                    {
+                        this.UpdateStoredStats(t, -1 * t.stackCount);
+                    }
+                }
                 this.storedThings.Remove(key);
             }
             keysToRemove.Clear();
@@ -718,7 +739,7 @@ namespace InfiniteStorage
                 BuildingUtil.DropThing(t, this, this.CurrentMap, false);
             }
             removed.Clear();
-            removed = null;
+            removed = null;*/
         }
         #endregion
     }
