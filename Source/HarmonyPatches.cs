@@ -33,59 +33,6 @@ namespace InfiniteStorage
         }
     }
 
-    [HarmonyPatch(typeof(HealthCardUtility), "DrawMedOperationsTab")]
-    static class Patch_HealthCardUtility_DrawMedOperationsTab
-    {
-        [HarmonyPriority(Priority.First)]
-        static void Prefix(Pawn pawn)
-        {
-            if (pawn == null)
-                return;
-
-            if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing != null)
-            {
-                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
-            }
-
-            Patch_ListerThings_ThingsInGroup.AvailableMedicalThing = new List<Thing>();
-            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
-            {
-                if (storage.IsOperational && storage.Map == pawn.Map)
-                {
-                    foreach (Thing t in storage.StoredThings)
-                    {
-                        if (t.def.IsDrug || t.def.isBodyPartOrImplant)
-                        {
-                            Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(storage.StoredThings);
-                        }
-                    }
-                }
-            }
-        }
-
-        static void Postfix()
-        {
-            if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing != null)
-            {
-                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
-                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing = null;
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(ListerThings), "ThingsInGroup")]
-    static class Patch_ListerThings_ThingsInGroup
-    {
-        public static List<Thing> AvailableMedicalThing = null;
-        static void Postfix(ref List<Thing> __result, ThingRequestGroup group)
-        {
-            if (AvailableMedicalThing != null)
-            {
-                __result.AddRange(AvailableMedicalThing);
-            }
-        }
-    }
-
     #region Used by the left hand tally
     [HarmonyPatch(typeof(ResourceCounter), "UpdateResourceCounts")]
     static class Patch_ResourceCounter_UpdateResourceCounts
@@ -429,6 +376,16 @@ namespace InfiniteStorage
                 result.AddRange(TradeUtil.EmptyStorages(playerNegotiator.Map));
                 __result = result;
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(TradeDeal), "Reset")]
+    static class Patch_TradeDeal_Reset
+    {
+        // On Reset from Trade Dialog
+        static void Prefix()
+        {
+            TradeUtil.ReclaimThings();
         }
     }
 

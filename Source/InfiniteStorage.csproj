@@ -50,6 +50,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HarmonyPatches_Medicine.cs" />
     <Compile Include="HarmonyPatches_SendableSilver.cs" />
     <Compile Include="HarmonyPatches_Bill.cs" />
     <Compile Include="BuildingUtil.cs" />

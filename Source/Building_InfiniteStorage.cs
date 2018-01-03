@@ -296,13 +296,33 @@ namespace InfiniteStorage
             return thing.GetStatValue(StatDefOf.Mass, true) * count;
         }
 
+        public IEnumerable<Thing> GetMedicalThings(bool includeBodyParts = true, bool remove = false)
+        {
+            List<Thing> rv = new List<Thing>();
+            foreach (LinkedList<Thing> l in this.storedThings.Values)
+            {
+                if (l.Count > 0)
+                {
+                    ThingDef def = l.First.Value.def;
+                    if (def.IsMedicine || (includeBodyParts && def.isBodyPartOrImplant))
+                    {
+                        rv.AddRange(l);
+                        if (remove == true)
+                        {
+                            l.Clear();
+                        }
+                    }
+                }
+            }
+            return rv;
+        }
+
         public bool TryGetFilteredThings(Bill bill, ThingFilter filter, out List<Thing> gotten)
         {
             gotten = null;
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
-                if (l.Count > 0 &&
-                    bill.IsFixedOrAllowedIngredient(l.First.Value.def) && filter.Allows(l.First.Value.def))
+                if (l.Count > 0)
                 {
                     foreach (Thing t in l)
                     {
@@ -366,6 +386,7 @@ namespace InfiniteStorage
             LinkedList<Thing> l;
             if (this.storedThings.TryGetValue(def.label, out l))
             {
+                this.storedThings.Remove(def.label);
                 removed = l;
                 return true;
             }

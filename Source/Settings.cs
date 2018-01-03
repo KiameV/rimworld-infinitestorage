@@ -53,11 +53,11 @@ namespace InfiniteStorage
         {
             base.ExposeData();
 
-            Scribe_Values.Look<bool>(ref enableEnergyBuffer, "InfiniteStorage.EnableEnergyBuffer", true, false);
-            Scribe_Values.Look<int>(ref desiredEnergyBuffer, "InfiniteStorage.DesiredEnergyBuffer", DEFAULT_ENERGY_BUFFER, false);
-            Scribe_Values.Look<float>(ref energyFactor, "InfiniteStorage.EnergyFactor", DEFAULT_ENERGY_FACTOR, false);
-            Scribe_Values.Look<bool>(ref collectThingsAutomatically, "InfiniteStorage.CollectThingsAutomatically", true, false);
-            Scribe_Values.Look<long>(ref timeBetweenAutoCollects, "InfiniteStorage.TimeBetweenAutoCollects", DEFAULT_TIME_BETWEEN_COLLECTS_TICKS, false);
+            Scribe_Values.Look<bool>(ref enableEnergyBuffer, "InfiniteStorage.EnableEnergyBuffer", true, true);
+            Scribe_Values.Look<int>(ref desiredEnergyBuffer, "InfiniteStorage.DesiredEnergyBuffer", DEFAULT_ENERGY_BUFFER, true);
+            Scribe_Values.Look<float>(ref energyFactor, "InfiniteStorage.EnergyFactor", DEFAULT_ENERGY_FACTOR, true);
+            Scribe_Values.Look<bool>(ref collectThingsAutomatically, "InfiniteStorage.CollectThingsAutomatically", true, true);
+            Scribe_Values.Look<long>(ref timeBetweenAutoCollects, "InfiniteStorage.TimeBetweenAutoCollects", DEFAULT_TIME_BETWEEN_COLLECTS_TICKS, true);
         }
 
         public static void DoSettingsWindowContents(Rect rect)
