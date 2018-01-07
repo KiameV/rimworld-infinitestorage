@@ -70,7 +70,39 @@ namespace InfiniteStorage
     }
     #endregion
 
-    #region Used for creating other buildings
+    #region Find Ammo
+    [HarmonyPatch(typeof(JobDriver_ManTurret), "FindAmmoForTurret")]
+    static class JobDriver_ManTurret_FindAmmoForTurret
+    {
+        static void Prefix(Pawn pawn, Building_TurretGun gun)
+        {
+#if DEBUG
+            Log.Warning("Find Ammo");
+#endif
+            if (pawn.IsColonist && pawn.Map == gun.Map)
+            {
+                StorageSettings allowedShellsSettings = gun.gun.TryGetComp<CompChangeableProjectile>().allowedShellsSettings;
+                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(gun.Map))
+                {
+#if DEBUG
+                    Log.Warning("    Storeage: " + storage.Label);
+#endif
+                    Thing t;
+                    if (storage.TryRemove(allowedShellsSettings.filter, out t))
+                    {
+#if DEBUG
+                        Log.Warning("        Ammo fouynd: " + t.Label);
+#endif
+                        List<Thing> dropped = new List<Thing>();
+                        BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false, dropped);
+                    }
+                }
+            }
+        }
+    }
+#endregion
+
+#region Used for creating other buildings
     [HarmonyPatch(typeof(Designator_Build), "ProcessInput")]
     static class Patch_Designator_Build_ProcessInput
     {
@@ -150,7 +182,7 @@ namespace InfiniteStorage
             return false;
         }
     }
-    #endregion
+#endregion
 
     [HarmonyPatch(typeof(WorkGiver_Refuel), "FindBestFuel")]
     static class Patch_WorkGiver_Refuel_FindBestFuel
@@ -243,7 +275,7 @@ namespace InfiniteStorage
         }
     }
 
-    #region Reserve
+#region Reserve
     static class ReservationManagerUtil
     {
         private static FieldInfo mapFI = null;
@@ -319,9 +351,9 @@ namespace InfiniteStorage
             return true;
         }
     }
-    #endregion
+#endregion
 
-    #region Trades
+#region Trades
     static class TradeUtil
     {
         public static IEnumerable<Thing> EmptyStorages(Map map)
@@ -398,9 +430,9 @@ namespace InfiniteStorage
             TradeUtil.ReclaimThings();
         }
     }
-    #endregion
+#endregion
 
-    #region Caravan Forming
+#region Caravan Forming
     [HarmonyPatch(typeof(Dialog_FormCaravan), "PostOpen")]
     static class Patch_Dialog_FormCaravan_PostOpen
     {
@@ -478,9 +510,9 @@ namespace InfiniteStorage
             }
         }
     }
-    #endregion
+#endregion
 
-    #region Fix Broken Tool
+#region Fix Broken Tool
     [HarmonyPatch(typeof(WorkGiver_FixBrokenDownBuilding), "FindClosestComponent")]
     static class Patch_WorkGiver_FixBrokenDownBuilding_FindClosestComponent
     {
@@ -500,9 +532,9 @@ namespace InfiniteStorage
             }
         }
     }
-    #endregion
+#endregion
 
-    #region Handle "Do until X" for stored weapons
+#region Handle "Do until X" for stored weapons
     [HarmonyPatch(typeof(RecipeWorkerCounter), "CountProducts")]
     static class Patch_RecipeWorkerCounter_CountProducts
     {
@@ -527,5 +559,5 @@ namespace InfiniteStorage
             }
         }
     }
-    #endregion
+#endregion
 }

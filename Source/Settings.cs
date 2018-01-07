@@ -38,13 +38,17 @@ namespace InfiniteStorage
         private static float energyFactor = DEFAULT_ENERGY_FACTOR;
         public static float EnergyFactor { get { return energyFactor; } }
 
+        private static bool emptyOnPowerLoss = false;
+        public static bool EmptyOnPowerLoss { get { return emptyOnPowerLoss; } }
+
         private static bool collectThingsAutomatically = true;
         public static bool CollectThingsAutomatically { get { return collectThingsAutomatically; } }
 
         private static long timeBetweenAutoCollects = DEFAULT_TIME_BETWEEN_COLLECTS_TICKS;
         public static long TimeBetweenAutoCollectsTicks { get { return timeBetweenAutoCollects; } }
         private static long TimeBetweenAutoCollectsSeconds { get { return timeBetweenAutoCollects / TimeSpan.TicksPerSecond; } }
-
+        
+        // Not saved
         private static string desiredEnergyBufferUserInput = desiredEnergyBuffer.ToString();
         private static string energyFactorUserInput = energyFactor.ToString();
         private static string timeBetweenAutoCollectsUserInput = TimeBetweenAutoCollectsSeconds.ToString();
@@ -56,6 +60,7 @@ namespace InfiniteStorage
             Scribe_Values.Look<bool>(ref enableEnergyBuffer, "InfiniteStorage.EnableEnergyBuffer", true, true);
             Scribe_Values.Look<int>(ref desiredEnergyBuffer, "InfiniteStorage.DesiredEnergyBuffer", DEFAULT_ENERGY_BUFFER, true);
             Scribe_Values.Look<float>(ref energyFactor, "InfiniteStorage.EnergyFactor", DEFAULT_ENERGY_FACTOR, true);
+            Scribe_Values.Look<bool>(ref emptyOnPowerLoss, "InfiniteStorage.EmptyOnPowerLoss", false, true);
             Scribe_Values.Look<bool>(ref collectThingsAutomatically, "InfiniteStorage.CollectThingsAutomatically", true, true);
             Scribe_Values.Look<long>(ref timeBetweenAutoCollects, "InfiniteStorage.TimeBetweenAutoCollects", DEFAULT_TIME_BETWEEN_COLLECTS_TICKS, true);
         }
@@ -125,6 +130,8 @@ namespace InfiniteStorage
             y += 50;
             Widgets.Label(new Rect(25, y, rect.width - 50, 32), "InfiniteStorage.EnergyFactorDesc".Translate());
 
+            y += 29;
+            Widgets.CheckboxLabeled(new Rect(25, y, 300, 32), "InfiniteStorage.EmptyOnPowerLoss".Translate(), ref emptyOnPowerLoss);
 
             y += 29;
             Widgets.DrawLineHorizontal(0, y, rect.width);

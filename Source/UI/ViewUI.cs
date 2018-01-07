@@ -54,6 +54,7 @@ namespace InfiniteStorage.UI
 
         private Vector2 scrollPosition = new Vector2(0, 0);
         private String searchText = "";
+        private bool itemsDropped = false;
 
         const int HEIGHT = 30;
         const int BUFFER = 2;
@@ -161,6 +162,10 @@ namespace InfiniteStorage.UI
             this.Minified.Clear();
             this.Apparel.Clear();
             this.Weapons.Clear();
+            if (this.itemsDropped && this.InfiniteStorage != null)
+            {
+                this.InfiniteStorage.ResetAutoReclaimTime();
+            }
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -237,6 +242,7 @@ namespace InfiniteStorage.UI
                 if (this.InfiniteStorage.TryRemove(thing))
                 {
                     BuildingUtil.DropThing(thing, thing.stackCount, this.InfiniteStorage, this.InfiniteStorage.Map, false);
+                    this.itemsDropped = true;
                 }
                 this.PopulateDisplayThings();
                 return true;

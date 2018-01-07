@@ -45,11 +45,12 @@ namespace InfiniteStorage
         public bool CanAutoCollect { get; set; }
 
         private long lastAutoReclaim = 0;
+        public void ResetAutoReclaimTime() { this.lastAutoReclaim = DateTime.Now.Ticks; }
 
         private List<Thing> ToDumpOnSpawn = null;
 
         [Unsaved]
-        private float storedCount = 0;
+        private int storedCount = 0;
         [Unsaved]
         private float storedWeight = 0;
 
@@ -150,8 +151,9 @@ namespace InfiniteStorage
         
         public void Empty(List<Thing> droppedThings = null)
         {
-            if (!this.IsOperational)
+            if (!this.IsOperational && !Settings.EmptyOnPowerLoss)
                 return;
+
             try
             {
                 this.AllowAdds = false;
@@ -168,6 +170,7 @@ namespace InfiniteStorage
             }
             finally
             {
+                this.ResetAutoReclaimTime();
                 this.AllowAdds = true;
             }
         }
@@ -563,13 +566,23 @@ namespace InfiniteStorage
             {
                 this.compPowerTrader.PowerOutput = -1 * Settings.EnergyFactor * this.storedWeight;
             }
-
             long now = DateTime.Now.Ticks;
+#if DEBUG
+            Log.Warning("TickRare: Now: " + now + " Last Reclaim: " + this.lastAutoReclaim + " Now - Last Reclaim " + (now - this.lastAutoReclaim) + " Time Between: " + Settings.TimeBetweenAutoCollectsTicks + " Time Between - Diff: " + (Settings.TimeBetweenAutoCollectsTicks - (now - this.lastAutoReclaim)));
+#endif
             if (Settings.CollectThingsAutomatically &&
                 now - this.lastAutoReclaim > Settings.TimeBetweenAutoCollectsTicks)
             {
+#if DEBUG
+                Log.Warning("Perform auto-reclaim");
+#endif
                 this.Reclaim(true);
                 this.lastAutoReclaim = now;
+            }
+            
+            if (!this.IsOperational && Settings.EmptyOnPowerLoss && this.storedCount > 0)
+            {
+                this.Empty();
             }
         }
 
