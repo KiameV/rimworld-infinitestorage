@@ -49,6 +49,9 @@ namespace InfiniteStorage
 
         private List<Thing> ToDumpOnSpawn = null;
 
+        private bool includeInWorldLookup;
+        public bool IncludeInWorldLookup { get { return this.includeInWorldLookup; } }
+
         [Unsaved]
         private int storedCount = 0;
         [Unsaved]
@@ -71,6 +74,8 @@ namespace InfiniteStorage
                 base.settings.CopyFrom(this.def.building.defaultStorageSettings);
                 base.settings.filter.SetDisallowAll();
             }
+
+            this.includeInWorldLookup = this.GetIncludeInWorldLookup();
 
             WorldComp.Add(map, this);
 
@@ -148,7 +153,7 @@ namespace InfiniteStorage
         {
             BuildingUtil.DropThing(t, this, this.CurrentMap, makeForbidden);
         }
-        
+
         public void Empty(List<Thing> droppedThings = null)
         {
             if (!this.IsOperational && !Settings.EmptyOnPowerLoss)
@@ -242,7 +247,7 @@ namespace InfiniteStorage
 
             if (this.UsesPower && Settings.EnableEnergyBuffer)
             {
-                if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick < 
+                if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick <
                     Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
                 {
                     return false;
@@ -354,11 +359,11 @@ namespace InfiniteStorage
             return false;
         }
 
-        public bool TryRemove(ThingFilter filter, out Thing removed)
+        public bool TryRemove(ThingFilter filter, out List<Thing> removed)
         {
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
-                if (l.Count > 0 && 
+                if (l.Count > 0 &&
                     filter.Allows(l.First.Value.def))
                 {
                     Thing t = l.First.Value;
@@ -401,41 +406,79 @@ namespace InfiniteStorage
             return false;
         }
 
-        public bool TryRemove(Thing thing, int count, out Thing removed)
+        public bool TryRemove(Thing thing, int count, out List<Thing> removed)
         {
             return this.TryRemove(thing.def, count, out removed);
         }
 
-        public bool TryRemove(ThingDef def, int count, out Thing removed)
+        public bool TryRemove(ThingDef def, int count, out List<Thing> removed)
         {
+#if DEBUG || DROP_DEBUG
+            Log.Warning("TryRemove(ThingDef, int, out List<Thing>)");
+#endif
             LinkedList<Thing> l;
+            removed = null;
             if (this.storedThings.TryGetValue(def.label, out l))
             {
-                if (l.Count > 0)
+                int need = count;
+                int removeCount = 0;
+                LinkedListNode<Thing> n = l.First;
+                while (n != null && need > 0)
                 {
-                    removed = l.First.Value;
-                    if (removed.stackCount <= count)
-                    {
-                        count = removed.stackCount;
-                        l.RemoveFirst();
-                        if (l.Count <= 0)
-                        {
+                    Thing t = n.Value;
+                    LinkedListNode<Thing> next = n.Next;
+#if DEBUG || DROP_DEBUG
+                    Log.Warning("    Iteration: " + t.Label);
+#endif
 
-                            this.storedThings.Remove(def.label);
-                        }
+                    if (removed == null)
+                    {
+                        removed = new List<Thing>();
+                    }
+
+                    if (t.stackCount == 0)
+                    {
+#if DEBUG || DROP_DEBUG
+                        Log.Warning("        0 stack count");
+#endif
+                        l.Remove(n);
+                    }
+                    else if (need >= t.stackCount)
+                    {
+#if DEBUG || DROP_DEBUG
+                        Log.Warning("        need >= t.stackCount");
+#endif
+                        need -= t.stackCount;
+                        removeCount += t.stackCount;
+                        l.Remove(n);
+                        removed.Add(t);
                     }
                     else
                     {
-                        removed = removed.SplitOff(count);
+                        removeCount += need;
+                        Thing split = t.SplitOff(need);
+#if DEBUG || DROP_DEBUG
+                        Log.Warning("        else split off to remove - " + split.ToString() + " - " + split.Label);
+#endif
+                        removed.Add(split);
+                        need = 0;
                     }
-                    this.UpdateStoredStats(removed, count, false);
+                    n = next;
+                }
+
+                if (removed != null && removed.Count > 0 && removeCount > 0)
+                {
+#if DEBUG || DROP_DEBUG
+                    Log.Warning("    UpdateStoredStats: List.Count: " + removed.Count + " removeCount: " + removeCount);
+#endif
+                    this.UpdateStoredStats(removed[0], removeCount, false);
                     return true;
                 }
             }
-            removed = null;
+
             return false;
         }
-        
+
         private void UpdateStoredStats(Thing thing, int count, bool isAdding, bool force = false)
         {
             float weight = this.GetThingWeight(thing, count);
@@ -459,6 +502,23 @@ namespace InfiniteStorage
                 }
             }
         }
+        
+        /*ublic new float MarketValue
+        {
+            get
+            {
+                float v = base.MarketValue;
+                foreach (LinkedList<Thing> l in this.storedThings.Values)
+                {
+                    foreach (Thing t in l)
+                    {
+                        v += (float)t.stackCount * t.MarketValue;
+                    }
+                }
+                Log.Warning("Market Value: " + v);
+                return v;
+            }
+        }*/
 
         public void HandleThingsOnTop()
         {
@@ -580,7 +640,7 @@ namespace InfiniteStorage
                 this.lastAutoReclaim = now;
             }
             
-            if (!this.IsOperational && Settings.EmptyOnPowerLoss && this.storedCount > 0)
+            if (!this.IsOperational && Settings.EmptyOnPowerLoss && this.storedCount > 0 && Settings.EnergyFactor > 0.00001f)
             {
                 this.Empty();
             }
@@ -638,16 +698,19 @@ namespace InfiniteStorage
                 ++key;
             }
 
-            l.Add(new Command_Action
+            if (this.IncludeInWorldLookup)
             {
-                icon = (this.includeInTradeDeals) ? ViewUI.yesSellTexture : ViewUI.noSellTexture,
-                defaultDesc = "InfiniteStorage.IncludeInTradeDealsDesc".Translate(),
-                defaultLabel = "InfiniteStorage.IncludeInTradeDeals".Translate(),
-                activateSound = SoundDef.Named("Click"),
-                action = delegate { this.includeInTradeDeals = !this.includeInTradeDeals; },
-                groupKey = key
-            });
-            ++key;
+                l.Add(new Command_Action
+                {
+                    icon = (this.includeInTradeDeals) ? ViewUI.yesSellTexture : ViewUI.noSellTexture,
+                    defaultDesc = "InfiniteStorage.IncludeInTradeDealsDesc".Translate(),
+                    defaultLabel = "InfiniteStorage.IncludeInTradeDeals".Translate(),
+                    activateSound = SoundDef.Named("Click"),
+                    action = delegate { this.includeInTradeDeals = !this.includeInTradeDeals; },
+                    groupKey = key
+                });
+                ++key;
+            }
 
             l.Add(new Command_Action
             {
@@ -660,7 +723,11 @@ namespace InfiniteStorage
             });
             ++key;
 
-            return SaveStorageSettingsUtil.SaveStorageSettingsGizmoUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
+            if (this.includeInWorldLookup)
+            {
+                return SaveStorageSettingsUtil.SaveStorageSettingsGizmoUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
+            }
+            return l;
         }
 
         private string GetSaveStorageSettingType()
@@ -679,6 +746,26 @@ namespace InfiniteStorage
             return SaveStorageSettingsUtil.SaveTypeEnum.Zone_Stockpile.ToString();
         }
 
+        private bool GetIncludeInWorldLookup()
+        {
+            InfiniteStorageType s = this.def.GetModExtension<InfiniteStorageType>();
+            if (s != null && s.IncludeInWorldLookup.Length > 0)
+            {
+#if DEBUG
+                Log.Warning("Found InfiniteStorageType = " + s.SaveSettingsType);
+#endif
+                if (s.IncludeInWorldLookup.ToLower()[0] == 'f')
+                {
+                    Log.Warning("    return false");
+                    return false;
+                }
+            }
+#if DEBUG
+                Log.Warning("Did not find InfiniteStorageType def = " + def.label);
+#endif
+            return true;
+        }
+
         private Texture2D GetGizmoViewTexture()
         {
             InfiniteStorgeGizmoViewTexture t = this.def.GetModExtension<InfiniteStorgeGizmoViewTexture>();
@@ -693,6 +780,8 @@ namespace InfiniteStorage
                         return ViewUI.BodyPartViewTexture;
                     case "viewtextile":
                         return ViewUI.TextileViewTexture;
+                    case "viewtrough":
+                        return ViewUI.TroughViewTexture;
                 }
             }
 #if DEBUG

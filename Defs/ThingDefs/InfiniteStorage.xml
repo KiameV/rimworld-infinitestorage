@@ -94,6 +94,15 @@
 		<hasInteractionCell>True</hasInteractionCell>
 		<interactionCellOffset>(0,0,1)</interactionCellOffset>
 		<designationCategory>Misc</designationCategory>
+		<modExtensions>
+			<li Class="InfiniteStorage.InfiniteStorageType">
+				<SaveSettingsType>Zone_Stockpile</SaveSettingsType>
+				<IncludeInWorldLookup>true</IncludeInWorldLookup>
+			</li>
+			<li Class="InfiniteStorage.InfiniteStorgeGizmoViewTexture">
+				<GizmoViewTexture>infinitestorageview</GizmoViewTexture>
+			</li>
+		</modExtensions>
 		<tickerType>Rare</tickerType>
 	</ThingDef>
 </Defs>

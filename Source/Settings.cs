@@ -63,6 +63,13 @@ namespace InfiniteStorage
             Scribe_Values.Look<bool>(ref emptyOnPowerLoss, "InfiniteStorage.EmptyOnPowerLoss", false, true);
             Scribe_Values.Look<bool>(ref collectThingsAutomatically, "InfiniteStorage.CollectThingsAutomatically", true, true);
             Scribe_Values.Look<long>(ref timeBetweenAutoCollects, "InfiniteStorage.TimeBetweenAutoCollects", DEFAULT_TIME_BETWEEN_COLLECTS_TICKS, true);
+
+            if (Scribe.mode != LoadSaveMode.Saving)
+            {
+                desiredEnergyBufferUserInput = desiredEnergyBuffer.ToString();
+                energyFactorUserInput = energyFactor.ToString();
+                timeBetweenAutoCollectsUserInput = TimeBetweenAutoCollectsSeconds.ToString();
+            }
         }
 
         public static void DoSettingsWindowContents(Rect rect)

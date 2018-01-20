@@ -66,6 +66,7 @@
 		<modExtensions>
 			<li Class="InfiniteStorage.InfiniteStorageType">
 				<SaveSettingsType>Textile_Management</SaveSettingsType>
+				<IncludeInWorldLookup>true</IncludeInWorldLookup>
 			</li>
 			<li Class="InfiniteStorage.InfiniteStorgeGizmoViewTexture">
 				<GizmoViewTexture>viewtextile</GizmoViewTexture>

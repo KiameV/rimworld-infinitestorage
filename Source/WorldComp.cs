@@ -9,6 +9,8 @@ namespace InfiniteStorage
     {
         [Unsaved]
         private static readonly Dictionary<Map, LinkedList<Building_InfiniteStorage>> ifStorages = new Dictionary<Map, LinkedList<Building_InfiniteStorage>>();
+        [Unsaved]
+        private static readonly Dictionary<Map, LinkedList<Building_InfiniteStorage>> ifNonGlobalStorages = new Dictionary<Map, LinkedList<Building_InfiniteStorage>>();
 
         public WorldComp(World world) : base(world)
         {
@@ -21,17 +23,35 @@ namespace InfiniteStorage
 
         public static void Add(Map map, Building_InfiniteStorage storage)
         {
+            if (storage == null)
+            {
+                Log.Error("Tried to add a null storage");
+                return;
+            }
+
             if (map == null)
             {
                 Log.Error("Tried to add " + storage.Label + " to a null map. Please let me know if this ever happens!");
                 return;
             }
 
+            if (!storage.IncludeInWorldLookup)
+            {
+                Add(map, storage, ifNonGlobalStorages);
+            }
+            else
+            {
+                Add(map, storage, ifStorages);
+            }
+        }
+
+        private static void Add(Map map, Building_InfiniteStorage storage, Dictionary<Map, LinkedList<Building_InfiniteStorage>> storages)
+        {
             LinkedList<Building_InfiniteStorage> l;
-            if (!ifStorages.TryGetValue(map, out l))
+            if (!storages.TryGetValue(map, out l))
             {
                 l = new LinkedList<Building_InfiniteStorage>();
-                ifStorages.Add(map, l);
+                storages.Add(map, l);
             }
 
             if (!l.Contains(storage))
@@ -61,6 +81,16 @@ namespace InfiniteStorage
             return new List<Building_InfiniteStorage>(0);
         }
 
+        public static IEnumerable<Building_InfiniteStorage> GetNonGlobalInfiniteStorages(Map map)
+        {
+            LinkedList<Building_InfiniteStorage> l;
+            if (map != null && ifNonGlobalStorages.TryGetValue(map, out l))
+            {
+                return l;
+            }
+            return new List<Building_InfiniteStorage>(0);
+        }
+
         public static bool HasInfiniteStorages(Map map)
         {
             LinkedList<Building_InfiniteStorage> l;
@@ -71,11 +101,32 @@ namespace InfiniteStorage
             return false;
         }
 
-
-        public static void Remove(Map map, Building_InfiniteStorage storage)
+        public static bool HasNonGlobalInfiniteStorages(Map map)
         {
             LinkedList<Building_InfiniteStorage> l;
-            if (map != null && ifStorages.TryGetValue(map, out l))
+            if (map != null && ifNonGlobalStorages.TryGetValue(map, out l))
+            {
+                return l.Count > 0;
+            }
+            return false;
+        }
+        
+        public static void Remove(Map map, Building_InfiniteStorage storage)
+        {
+            if (!storage.IncludeInWorldLookup)
+            {
+                Remove(map, storage, ifNonGlobalStorages);
+            }
+            else
+            {
+                Remove(map, storage, ifStorages);
+            }
+        }
+
+        private static void Remove(Map map, Building_InfiniteStorage storage, Dictionary<Map, LinkedList<Building_InfiniteStorage>> storages)
+        {
+            LinkedList<Building_InfiniteStorage> l;
+            if (map != null && storages.TryGetValue(map, out l))
             {
                 l.Remove(storage);
                 if (l.Count == 0)

@@ -17,6 +17,7 @@ namespace InfiniteStorage.UI
             BodyPartViewTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/viewbodyparts", true);
             TextileViewTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/viewtextile", true);
             InfiniteStorageViewTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/viewif", true);
+            TroughViewTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/viewtrough", true);
             emptyTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/empty", true);
             collectTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/collect", true);
             yesSellTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/yessell", true);
@@ -27,6 +28,7 @@ namespace InfiniteStorage.UI
         public static Texture2D BodyPartViewTexture;
         public static Texture2D TextileViewTexture;
         public static Texture2D InfiniteStorageViewTexture;
+        public static Texture2D TroughViewTexture;
         public static Texture2D DropTexture;
         public static Texture2D emptyTexture;
         public static Texture2D collectTexture;

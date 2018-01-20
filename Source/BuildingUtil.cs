@@ -84,11 +84,12 @@ namespace InfiniteStorage
             }
         }
 
-        public static void DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = true, List<Thing> droppedThings = null)
+        public static bool DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = true, List<Thing> droppedThings = null)
         {
 #if DEBUG || DROP_DEBUG
             Log.Warning("DropThing: toDrop: " + toDrop.Label + " toDrop.stackCount: " + toDrop.stackCount + " amountToDrop: " + amountToDrop + " toDrop.def.stackLimit: " + toDrop.def.stackLimit);
 #endif
+            bool anyDropped = false;
             try
             {
                 from.AllowAdds = false;
@@ -98,7 +99,7 @@ namespace InfiniteStorage
                 while(!done)
                 {
 #if DEBUG || DROP_DEBUG
-                    Log.Warning(" Loop not done toDrop.stackCount: " + toDrop.stackCount);
+                    Log.Warning("    Loop not done toDrop.stackCount: " + toDrop.stackCount);
 #endif
                     int toTake = toDrop.def.stackLimit;
                     if (toTake > amountToDrop)
@@ -110,13 +111,13 @@ namespace InfiniteStorage
                     {
                         if (amountToDrop > toTake)
                         {
-                            Log.Error("ThingStorage: Unable to drop " + (amountToDrop - toTake).ToString() + " of " + toDrop.def.label);
+                            Log.Error("        ThingStorage: Unable to drop " + (amountToDrop - toTake).ToString() + " of " + toDrop.def.label);
                         }
                         toTake = toDrop.stackCount;
                         done = true;
                     }
 #if DEBUG || DROP_DEBUG
-                    Log.Warning(" toTake: " + toTake);
+                    Log.Warning("        toTake: " + toTake);
 #endif
                     if (toTake > 0)
                     {
@@ -126,7 +127,10 @@ namespace InfiniteStorage
                         {
                             droppedThings.Add(t);
                         }
-                        DropSingleThing(t, from, map, makeForbidden);
+                        if (DropSingleThing(t, from, map, makeForbidden))
+                        {
+                            anyDropped = true;
+                        }
                     }
                 }
             }
@@ -134,20 +138,37 @@ namespace InfiniteStorage
             {
                 from.AllowAdds = true;
             }
+#if DEBUG || DROP_DEBUG
+            Log.Warning("    Return: " + anyDropped);
+#endif
+            return anyDropped;
         }
 
-        public static void DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden)
+        public static bool DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden)
         {
+#if DEBUG || DROP_DEBUG
+            Log.Warning("DropSingleThing");
+#endif
             try
             {
                 from.AllowAdds = false;
                 Thing t;
                 if (!toDrop.Spawned)
                 {
-                    GenThing.TryDropAndSetForbidden(toDrop, from.Position, map, ThingPlaceMode.Near, out t, makeForbidden);
+                    if (!GenThing.TryDropAndSetForbidden(toDrop, from.Position, map, ThingPlaceMode.Near, out t, makeForbidden))
+                    {
+#if DEBUG || DROP_DEBUG
+                        Log.Warning("    First Drop Attempt failed " + t.Label);
+#endif
+                    }
                     if (!toDrop.Spawned)
                     {
-                        GenPlace.TryPlaceThing(toDrop, from.Position, map, ThingPlaceMode.Near);
+                        if (!GenPlace.TryPlaceThing(toDrop, from.Position, map, ThingPlaceMode.Near))
+                        {
+#if DEBUG || DROP_DEBUG
+                            Log.Warning("    Second Drop Attempt failed " + t.Label);
+#endif
+                        }
                     }
                 }
                 if (toDrop.Position.Equals(from.Position))
@@ -177,6 +198,18 @@ namespace InfiniteStorage
             {
                 from.AllowAdds = true;
             }
+
+            if (toDrop == null)
+            {
+#if DEBUG || DROP_DEBUG
+                Log.Warning("    null toDrop - return false");
+#endif
+                return false;
+            }
+#if DEBUG || DROP_DEBUG
+            Log.Warning("    Return: " + toDrop.Spawned);
+#endif
+            return toDrop.Spawned;
         }
     }
 }

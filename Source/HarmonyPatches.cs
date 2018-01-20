@@ -87,14 +87,17 @@ namespace InfiniteStorage
 #if DEBUG
                     Log.Warning("    Storeage: " + storage.Label);
 #endif
-                    Thing t;
-                    if (storage.TryRemove(allowedShellsSettings.filter, out t))
+                    List<Thing> l;
+                    if (storage.TryRemove(allowedShellsSettings.filter, out l))
                     {
+                        foreach (Thing t in l)
+                        {
 #if DEBUG
                         Log.Warning("        Ammo fouynd: " + t.Label);
 #endif
-                        List<Thing> dropped = new List<Thing>();
-                        BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false, dropped);
+                            List<Thing> dropped = new List<Thing>();
+                            BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false, dropped);
+                        }
                     }
                 }
             }
@@ -200,13 +203,19 @@ namespace InfiniteStorage
                 {
                     if (storage.Spawned && storage.Map == pawn.Map && storage.IsOperational)
                     {
-                        Thing t;
-                        if (storage.TryRemove(filter, out t))
+                        List<Thing> removed;
+                        if (storage.TryRemove(filter, out removed))
                         {
                             List<Thing> removedThings = new List<Thing>();
-                            BuildingUtil.DropThing(t, t.def.stackLimit, storage, storage.Map, false, removedThings);
+                            foreach (Thing t in removed)
+                            {
+                                BuildingUtil.DropThing(t, t.def.stackLimit, storage, storage.Map, false, removedThings);
+                            }
+
                             if (removedThings.Count > 0)
+                            {
                                 droppedAndStorage.Add(removedThings[0], storage);
+                            }
                         }
                     }
                 }
@@ -258,11 +267,14 @@ namespace InfiniteStorage
                     {
                         if (thing.stackCount >= need.count)
                         {
-                            Thing removed;
+                            List<Thing> removed;
                             int toDrop = (need.count < thing.def.stackLimit) ? thing.def.stackLimit : need.count;
                             if (storage.TryRemove(thing, toDrop, out removed))
                             {
-                                BuildingUtil.DropThing(removed, removed.stackCount, storage, storage.Map, false);
+                                foreach (Thing t in removed)
+                                {
+                                    BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false);
+                                }
 
                                 __result = true;
                                 ((Dictionary<int, bool>)CachedResultsFI.GetValue(__instance))[Gen.HashCombine<Faction>(need.GetHashCode(), pawn.Faction)] = __result;
@@ -275,7 +287,126 @@ namespace InfiniteStorage
         }
     }
 
-#region Reserve
+    #region Feed Self (for animals)
+    /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]
+    static class Patch_FoodUtility_TryFindBestFoodSourceFor
+    {
+        static void Postfix(
+            bool __result, Pawn getter, Pawn eater, bool desperate, ref Thing foodSource, ref ThingDef foodDef,
+            bool canRefillDispenser, bool canUseInventory, bool allowForbidden,
+            bool allowCorpse, bool allowSociallyImproper, bool allowHarvest)
+        {
+            if (eater == null || eater.needs == null || eater.needs.food == null || eater.Map == null)
+                return;
+
+            RaceProperties race = eater.def.race;
+#if DEBUG || DROP_DEBUG
+            Log.Warning("Patch_FoodUtility_TryFindBestFoodSourceFor.Postfix eater: [" + eater.Label + "] IsAnimal: [" + race.Animal + "] Faction: [" + eater.Faction + "] hasTrough: [" + WorldComp.HasNonGlobalInfiniteStorages(eater.Map) + "]");
+#endif
+            if (!__result &&
+                race.Animal &&
+                eater.needs.food.CurCategory >= HungerCategory.Hungry &&
+                eater.Faction == Faction.OfPlayer &&
+                WorldComp.HasNonGlobalInfiniteStorages(eater.Map))
+            {
+                bool eatsHay = race.Eats(FoodTypeFlags.Plant);
+                bool eatsKibble = race.Eats(FoodTypeFlags.Kibble);
+                int hayNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Hay);
+                int kibbleNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Kibble);
+#if DEBUG || DROP_DEBUG
+                Log.Warning("    eatsHay: [" + eatsHay + "] eatsKibble: [" + eatsKibble + "] hayNeeded: [" + hayNeeded + "] kibbleNeeded: [" + kibbleNeeded + "]");
+#endif
+                if (eatsHay || eatsKibble)
+                {
+                    foreach (Building_InfiniteStorage trough in WorldComp.GetNonGlobalInfiniteStorages(eater.Map))
+                    {
+#if DEBUG || DROP_DEBUG
+                        Log.Warning("    Trough: [" + trough.Label + "]");
+#endif
+                        if (eater.Map.reachability.CanReach(eater.Position, trough, PathEndMode.Touch, TraverseMode.PassDoors))
+                        {
+                            List<Thing> l = null;
+                            if (eatsHay)
+                            {
+                                __result = trough.TryRemove(ThingDefOf.Hay, hayNeeded, out l);
+#if DEBUG || DROP_DEBUG
+                                Log.Warning("        Hay: [" + __result + "] " + ListToString(l));
+#endif
+                            }
+                            if (!__result && eatsKibble)
+                            {
+                                __result = trough.TryRemove(ThingDefOf.Kibble, kibbleNeeded, out l);
+#if DEBUG || DROP_DEBUG
+                                Log.Warning("        Kibble: [" + __result + "]");
+#endif
+                            }
+
+                            if (__result && l != null)
+                            {
+#if DEBUG || DROP_DEBUG
+                                Log.Warning("        Drop: [" + foodSource.Label + "]");
+#endif
+                                try
+                                {
+                                    __result = false;
+                                    foreach (Thing t in l)
+                                    {
+                                        foodSource = t;
+                                        foodDef = t.def;
+                                        if (BuildingUtil.DropThing(foodSource, foodSource.stackCount, trough, eater.Map, false))
+                                        {
+                                            __result = true;
+                                        }
+#if DEBUG || DROP_DEBUG
+                                        Log.Warning("            foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
+#endif
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+#if DEBUG || DROP_DEBUG
+                                    Log.Warning("            Exception: " + e.Message + "\n" + e.StackTrace);
+#endif
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+#if DEBUG || DROP_DEBUG
+            Log.Warning("    result: " + __result + " foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
+#endif
+        }
+
+#if DEBUG || DROP_DEBUG
+        static string ListToString<T>(List<T> l) where T : Thing
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder("[");
+            if (l != null)
+            {
+                foreach (T t in l)
+                {
+                    if (sb.Length > 1)
+                        sb.Append(", ");
+                    if (t == null)
+                        sb.Append("null");
+                    else
+                    {
+                        sb.Append(t.Label);
+                    }
+                }
+                sb.Append("]");
+            }
+            else
+                sb.Append("null list");
+            return sb.ToString();
+        }
+#endif
+    }*/
+    #endregion
+
+    #region Reserve
     static class ReservationManagerUtil
     {
         private static FieldInfo mapFI = null;
@@ -522,10 +653,13 @@ namespace InfiniteStorage
             {
                 foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
                 {
-                    Thing t;
-                    if (storage.TryRemove(ThingDefOf.Component, 1, out t))
+                    List<Thing> list;
+                    if (storage.TryRemove(ThingDefOf.Component, 1, out list))
                     {
-                        BuildingUtil.DropThing(t, storage, storage.Map, false);
+                        foreach (Thing t in list)
+                        {
+                            BuildingUtil.DropThing(t, storage, storage.Map, false);
+                        }
                     }
                 }
                 __result = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.Component), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger(), TraverseMode.ByPawn, false), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x, 1, -1, null, false), null, 0, -1, false, RegionType.Set_Passable, false);

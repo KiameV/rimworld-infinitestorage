@@ -69,6 +69,7 @@
 		<modExtensions>
 			<li Class="InfiniteStorage.InfiniteStorageType">
 				<SaveSettingsType>BodyPart_Management</SaveSettingsType>
+				<IncludeInWorldLookup>true</IncludeInWorldLookup>
 			</li>
 			<li Class="InfiniteStorage.InfiniteStorgeGizmoViewTexture">
 				<GizmoViewTexture>viewbodyparts</GizmoViewTexture>

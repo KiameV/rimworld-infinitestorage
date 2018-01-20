@@ -482,21 +482,24 @@ namespace InfiniteStorage
                         {
                             if (count <= 0)
                                 break;
-                            Thing removed;
+                            List<Thing> removed;
                             if (st.Storage.TryRemove(st.Thing, count, out removed))
                             {
 #if DEBUG || DROP_DEBUG || BILL_DEBUG
                                 Log.Warning("    Storage Removing: " + st.Thing + " Count: " + count + " removed: " + removed.ToString());
 #endif
-                                count -= removed.stackCount;
-                                List<Thing> dropped = new List<Thing>();
-                                BuildingUtil.DropThing(removed, removed.stackCount, st.Storage, st.Storage.Map, false, dropped);
-                                foreach (Thing t in dropped)
+                                foreach (Thing r in removed)
                                 {
+                                    count -= r.stackCount;
+                                    List<Thing> dropped = new List<Thing>();
+                                    BuildingUtil.DropThing(r, r.stackCount, st.Storage, st.Storage.Map, false, dropped);
+                                    foreach (Thing t in dropped)
+                                    {
 #if DEBUG || DROP_DEBUG || BILL_DEBUG
                                     Log.Warning("        Dropped: " + t.Label);
 #endif
-                                    chosen.Add(new ThingAmount(t, t.stackCount));
+                                        chosen.Add(new ThingAmount(t, t.stackCount));
+                                    }
                                 }
                             }
                         }
