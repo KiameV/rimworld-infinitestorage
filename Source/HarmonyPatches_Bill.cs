@@ -323,6 +323,11 @@ namespace InfiniteStorage
                     return;
                 }
 
+                if (bill.recipe.workSkill == SkillDefOf.Cooking)
+                {
+                    return;
+                }
+
                 if (__result == true || !WorldComp.HasInfiniteStorages(bill.Map) || bill.Map != pawn.Map)
                     return;
                 
