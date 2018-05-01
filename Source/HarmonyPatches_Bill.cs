@@ -126,7 +126,7 @@ namespace InfiniteStorage
                 }
 
                 List<Thing> rt = (List<Thing>)RelevantThingsFI.GetValue(null);
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                 StringBuilder sb = new StringBuilder("TryFindBestBillIngredientsInSet: RT to add: [");
                 foreach (Thing t in rt)
                 {
@@ -148,7 +148,7 @@ namespace InfiniteStorage
 
             static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
             {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                 Log.Warning("TryFindBestBillIngredients postfix");
 #endif
                 if (__result == true)
@@ -178,7 +178,7 @@ namespace InfiniteStorage
                 newRelevantThings.Clear();
                 if (bill.recipe.ingredients.Count == 0)
                 {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                     Log.Warning("bill.recipe.ingredients.Count == 0");
 #endif
                     __result = true;
@@ -188,7 +188,7 @@ namespace InfiniteStorage
                 Region rootReg = rootCell.GetRegion(pawn.Map, RegionType.Set_Passable);
                 if (rootReg == null)
                 {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                     Log.Warning("rootReg == null");
 #endif
                     __result = true;
@@ -207,7 +207,7 @@ namespace InfiniteStorage
                         List<Thing> gotten;
                         if (storage.TryGetFilteredThings(bill, bill.ingredientFilter, out gotten))
                         {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                             StringBuilder sb = new StringBuilder("Adding From Storage: " + gotten.Count + Environment.NewLine);
 #endif
                             relevantThings.AddRange(gotten);
@@ -223,7 +223,7 @@ namespace InfiniteStorage
                     AddEveryMedicineToRelevantThingsFI.Invoke(null, new object[] { pawn, billGiver, relevantThings, baseValidator, pawn.Map });
                     if ((bool)TryFindBestBillIngredientsInSetFI.Invoke(null, new object[] { relevantThings, bill, chosen }))
                     {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                         Log.Warning("billGiverIsPawn && medicin && TryFindBestBillIngredientsInSet");
 #endif
                         __result = true;
@@ -265,14 +265,14 @@ namespace InfiniteStorage
                         newRelevantThings.Sort(comparison);
                         relevantThings.AddRange(newRelevantThings);
                         newRelevantThings.Clear();
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                         Log.Warning("1 relative things: " + relevantThings.Count + "chosen: " + chosen.Count);
                         //foreach (Thing t in relevantThings)
                         //    Log.Error("    " + t.Label);
 #endif
                         if ((bool)TryFindBestBillIngredientsInSetFI.Invoke(null, new object[] { relevantThings, bill, chosen }))
                         {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                             Log.Warning("2 relative things: " + relevantThings.Count + "chosen: " + chosen.Count);
 #endif
                             foundAll = true;
@@ -291,7 +291,7 @@ namespace InfiniteStorage
                 {
                     foreach (ThingAmount a in chosen)
                     {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                         Log.Warning("3 ThingAmount: Thing: " + a.thing.Label + " Count: " + a.count + " Is Spawned: " + a.thing.Spawned);
 #endif
                         if (!a.thing.Spawned)
@@ -327,7 +327,7 @@ namespace InfiniteStorage
                     return;
                 
                 List<Thing> processedThings = new List<Thing>((HashSet<Thing>)typeof(WorkGiver_DoBill).GetField("processedThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null));
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                 Log.Warning("TryFindBestBillIngredients.Postfix __result: " + __result + " bill: " + bill.Label + " chosenAmounts orig count: " + chosen.Count + " processed thigns: " + processedThings.Count);
                 foreach(ThingAmount a in chosen)
                 {
@@ -354,7 +354,7 @@ namespace InfiniteStorage
                     chosenAmounts[c.thing.def] = count;
                 }
 
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                 Log.Warning("    ChosenAmounts:");
                 foreach (KeyValuePair<ThingDef, int> kv in chosenAmounts)
                 {
@@ -375,12 +375,12 @@ namespace InfiniteStorage
                     {
                         if ((int)ing.GetBaseCount() >= kv.Value)
                         {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                             Log.Warning("    Needed Ing population count: " + kv.Key.label + " count: " + kv.Value);
 #endif
                             if (ing.filter.Allows(kv.Key))
                             {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                                 Log.Warning("    Needed Ing population found: " + kv.Key.label + " count: " + kv.Value);
 #endif
                                 found = true;
@@ -390,14 +390,14 @@ namespace InfiniteStorage
                     }
                     if (!found)
                     {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                         Log.Warning("    Needed Ing population not found");
 #endif
                         neededIngs.AddLast(new NeededIngrediants(ing.filter, (int)ing.GetBaseCount()));
                     }
                 }
 
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                 Log.Warning("    Needed Ings:");
                 foreach (NeededIngrediants ings in neededIngs)
                 {
@@ -425,7 +425,7 @@ namespace InfiniteStorage
                                     neededIng.Count -= amount;
                                     chosen.Add(new ThingAmount(t, amount));
                                     processedThings.RemoveAt(i);
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                                     Log.Warning("            neededIng processedThings found: " + t.Label + " count: " + amount + " neededIng count: " + neededIng.Count);
                                     Log.Warning("            neededIng.CountReached: " + neededIng.CountReached());
 #endif
@@ -436,12 +436,12 @@ namespace InfiniteStorage
                                 List<Thing> gotten;
                                 if (storage.TryGetFilteredThings(bill, neededIng.Filter, out gotten))
                                 {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                                     Log.Warning("            Found ings: " + gotten.Count + " need count: " + neededIng.Count);
 #endif
                                     foreach (Thing got in gotten)
                                     {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                                         Log.Warning("                ing: " + got.Label);
 #endif
                                         neededIng.Add(new StoredThings(storage, got));
@@ -450,7 +450,7 @@ namespace InfiniteStorage
                             }
                             if (neededIng.CountReached() || neededIng.Count <= 0)
                             {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                                 Log.Warning("                    -removing ing ");
                                 /*foreach(ThingDef d in neededIng.Filter.AllowedThingDefs)
                                 {
@@ -467,7 +467,7 @@ namespace InfiniteStorage
                     }
                 }
 
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                 Log.Warning("    neededIngs.count: " + neededIngs.Count);
                 Log.Warning("    ThingsToUse.count: " + thingsToUse.Count);
 #endif
@@ -485,7 +485,7 @@ namespace InfiniteStorage
                             List<Thing> removed;
                             if (st.Storage.TryRemove(st.Thing, count, out removed))
                             {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                                 Log.Warning("    Storage Removing: " + st.Thing + " Count: " + count + " removed: " + removed.ToString());
 #endif
                                 foreach (Thing r in removed)
@@ -495,7 +495,7 @@ namespace InfiniteStorage
                                     BuildingUtil.DropThing(r, r.stackCount, st.Storage, st.Storage.Map, false, dropped);
                                     foreach (Thing t in dropped)
                                     {
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                                     Log.Warning("        Dropped: " + t.Label);
 #endif
                                         chosen.Add(new ThingAmount(t, t.stackCount));
@@ -506,7 +506,7 @@ namespace InfiniteStorage
                     }
                 }
                 
-#if DEBUG || DROP_DEBUG || BILL_DEBUG
+#if BILL_DEBUG
                 StringBuilder sb = new StringBuilder();
                 foreach(ThingAmount ta in chosen)
                 {
