@@ -210,18 +210,82 @@ namespace InfiniteStorage
             }
         }
 
-        public int StoredThingCount(ThingDef def)
+        public int StoredThingCount(ThingDef expectedDef, ThingFilter ingrediantFilter)
         {
             int count = 0;
             LinkedList<Thing> l;
-            if (this.storedThings.TryGetValue(def.label, out l))
+            if (this.storedThings.TryGetValue(expectedDef.label, out l))
             {
                 foreach (Thing t in l)
                 {
-                    count += t.stackCount;
+                    if (this.Allows(t, expectedDef, ingrediantFilter))
+                    {
+                        count += t.stackCount;
+                    }
                 }
             }
+#if DEBUG || DEBUG_DO_UNTIL_X
+            else
+            {
+                Log.Warning("Building_InfiniteStorage.StoredThingCount Def of [" + expectedDef.label + "] Not Found. Stored Defs:");
+                foreach (string label in this.storedThings.Keys)
+                {
+                    Log.Warning("    Def: " + label);
+                }
+            }
+#endif
             return count;
+        }
+
+        private bool Allows(Thing t, ThingDef expectedDef, ThingFilter filter)
+        {
+            if (filter == null)
+            {
+                return true;
+            }
+
+#if DEBUG || DEBUG_DO_UNTIL_X
+            Log.Warning("Building_InfiniteStorage.Allows Begin [" + t.Label + "]");
+#endif
+            if (t.def != expectedDef)
+            {
+#if DEBUG || DEBUG_DO_UNTIL_X
+                Log.Warning("    Building_InfiniteStorage.Allows End Def Does Not Match [False]");
+#endif
+                return false;
+            }
+            if (expectedDef.useHitPoints &&
+                filter.AllowedHitPointsPercents.min != 0f && filter.AllowedHitPointsPercents.max != 100f)
+            {
+                float num = (float)t.HitPoints / (float)t.MaxHitPoints;
+                num = GenMath.RoundedHundredth(num);
+                if (!filter.AllowedHitPointsPercents.IncludesEpsilon(Mathf.Clamp01(num)))
+                {
+#if DEBUG || DEBUG_DO_UNTIL_X
+                    Log.Warning("    Building_InfiniteStorage.Allows End Hit Points [False]");
+#endif
+                    return false;
+                }
+            }
+            if (filter.AllowedQualityLevels != QualityRange.All && t.def.FollowQualityThingFilter())
+            {
+                QualityCategory p;
+                if (!t.TryGetQuality(out p))
+                {
+                    p = QualityCategory.Normal;
+                }
+                if (!filter.AllowedQualityLevels.Includes(p))
+                {
+#if DEBUG || DEBUG_DO_UNTIL_X
+                    Log.Warning("    Building_InfiniteStorage.Allows End Quality [False]");
+#endif
+                    return false;
+                }
+            }
+#if DEBUG || DEBUG_DO_UNTIL_X
+            Log.Warning("    Building_InfiniteStorage.Allows End [True]");
+#endif
+            return true;
         }
 
         public override void Notify_ReceivedThing(Thing newItem)

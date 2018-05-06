@@ -317,6 +317,13 @@ namespace InfiniteStorage
 
             static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
             {
+                if (bill == null || 
+                    bill.recipe == null || 
+                    bill.recipe.workSkill == SkillDefOf.Cooking)
+                {
+                    return;
+                }
+
                 if (bill.Map == null)
                 {
                     Log.Error("Bill's map is null");
@@ -338,7 +345,6 @@ namespace InfiniteStorage
                     Log.Warning("    pre processed: " + t.Label);
                 }
 #endif
-                
                 Dictionary<ThingDef, int> chosenAmounts = new Dictionary<ThingDef, int>();
                 foreach (ThingAmount c in chosen)
                 {

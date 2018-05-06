@@ -674,11 +674,6 @@ namespace InfiniteStorage
     {
         static void Postfix(ref int __result, RecipeWorkerCounter __instance, Bill_Production bill)
         {
-            if (bill.Map == null)
-            {
-                Log.Error("Bill has null map");
-            }
-
             List<ThingCountClass> products = __instance.recipe.products;
             if (WorldComp.HasInfiniteStorages(bill.Map) && products != null)
             {
@@ -687,7 +682,7 @@ namespace InfiniteStorage
                     ThingDef def = product.thingDef;
                     foreach (Building_InfiniteStorage s in WorldComp.GetInfiniteStorages(bill.Map))
                     {
-                        __result += s.StoredThingCount(def);
+                        __result += s.StoredThingCount(def, bill.ingredientFilter);
                     }
                 }
             }
