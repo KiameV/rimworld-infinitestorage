@@ -47,11 +47,11 @@ namespace InfiniteStorage
 
             Dictionary<ThingDef, int> countedAmounts = (Dictionary<ThingDef, int>)countedAmountsFI.GetValue(__instance);
 
-            foreach (Building_InfiniteStorage ts in WorldComp.GetInfiniteStorages(Find.VisibleMap))
+            foreach (Building_InfiniteStorage ts in WorldComp.GetInfiniteStorages(Find.CurrentMap))
             {
                 foreach (Thing thing in ts.StoredThings)
                 {
-                    if (thing.def.EverStoreable && thing.def.CountAsResource && !thing.IsNotFresh())
+                    if (thing.def.EverStorable(true) && thing.def.CountAsResource && !thing.IsNotFresh())
                     {
                         int count;
                         if (countedAmounts.TryGetValue(thing.def, out count))
@@ -121,7 +121,7 @@ namespace InfiniteStorage
                 writeStuffFI = typeof(Designator_Build).GetField("writeStuff", BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
-            Map map = Find.VisibleMap;
+            Map map = Find.CurrentMap;
 
             ThingDef thingDef = entDefFI.GetValue(__instance) as ThingDef;
             if (thingDef == null || !thingDef.MadeFromStuff || !WorldComp.HasInfiniteStorages(map))
@@ -187,57 +187,6 @@ namespace InfiniteStorage
     }
 #endregion
 
-    [HarmonyPatch(typeof(WorkGiver_Refuel), "FindBestFuel")]
-    static class Patch_WorkGiver_Refuel_FindBestFuel
-    {
-        private static Dictionary<Thing, Building_InfiniteStorage> droppedAndStorage = null;
-        static void Prefix(Pawn pawn, Thing refuelable)
-        {
-            if (WorldComp.HasInfiniteStorages(refuelable.Map))
-            {
-                droppedAndStorage = new Dictionary<Thing, Building_InfiniteStorage>();
-
-                ThingFilter filter = refuelable.TryGetComp<CompRefuelable>().Props.fuelFilter;
-
-                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(refuelable.Map))
-                {
-                    if (storage.Spawned && storage.Map == pawn.Map && storage.IsOperational)
-                    {
-                        List<Thing> removed;
-                        if (storage.TryRemove(filter, out removed))
-                        {
-                            List<Thing> removedThings = new List<Thing>();
-                            foreach (Thing t in removed)
-                            {
-                                BuildingUtil.DropThing(t, t.def.stackLimit, storage, storage.Map, false, removedThings);
-                            }
-
-                            if (removedThings.Count > 0)
-                            {
-                                droppedAndStorage.Add(removedThings[0], storage);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        static void Postfix(Thing __result)
-        {
-            if (droppedAndStorage != null)
-            {
-                foreach (KeyValuePair<Thing, Building_InfiniteStorage> kv in droppedAndStorage)
-                {
-                    if (kv.Key != __result)
-                    {
-                        kv.Value.Add(kv.Key);
-                    }
-                }
-                droppedAndStorage.Clear();
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(ItemAvailability), "ThingsAvailableAnywhere")]
     static class Patch_ItemAvailability_ThingsAvailableAnywhere
     {
@@ -263,12 +212,13 @@ namespace InfiniteStorage
                     Thing thing;
                     if (storage.IsOperational &&
                         storage.Spawned &&
-                        storage.TryGetValue(need.thingDef, out thing))
+                        need != null && need.thing != null &&
+                        storage.TryGetValue(need.thing.def, out thing))
                     {
-                        if (thing.stackCount >= need.count)
+                        if (thing.stackCount >= need.Count)
                         {
                             List<Thing> removed;
-                            int toDrop = (need.count < thing.def.stackLimit) ? thing.def.stackLimit : need.count;
+                            int toDrop = (need.Count < thing.def.stackLimit) ? thing.def.stackLimit : need.Count;
                             if (storage.TryRemove(thing, toDrop, out removed))
                             {
                                 foreach (Thing t in removed)
@@ -573,11 +523,10 @@ namespace InfiniteStorage
             if (type == typeof(Dialog_FormCaravan))
             {
                 Map map = __instance.GetType().GetField("map", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance) as Map;
-                TradeUtil.EmptyStorages(map);
 
                 foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
                 {
-                    storage.CanAutoCollect = false;
+                    storage.Empty();
                 }
             }
         }
@@ -589,9 +538,8 @@ namespace InfiniteStorage
         [HarmonyPriority(Priority.First)]
         static void Postfix(Lord lord)
         {
-            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(lord.Map))
+            foreach (Building_InfiniteStorage storage in WorldComp.GetAllInfiniteStorages())
             {
-                storage.CanAutoCollect = true;
                 storage.Reclaim();
             }
         }
@@ -599,42 +547,19 @@ namespace InfiniteStorage
 
     [HarmonyPatch(
         typeof(CaravanExitMapUtility), "ExitMapAndCreateCaravan",
-        new Type[] { typeof(IEnumerable<Pawn>), typeof(Faction), typeof(int), typeof(int) })]
-    static class Patch_CaravanExitMapUtility_ExitMapAndCreateCaravan_1
+        new Type[] { typeof(IEnumerable<Pawn>), typeof(Faction), typeof(int), typeof(int), typeof(int), typeof(bool) })]
+    static class Patch_CaravanExitMapUtility_ExitMapAndCreateCaravan
     {
         [HarmonyPriority(Priority.First)]
-        static void Prefix(IEnumerable<Pawn> pawns, Faction faction, int exitFromTile, int directionTile)
+        static void Prefix(IEnumerable<Pawn> pawns, Faction faction, int exitFromTile, int directionTile, int destinationTile, bool sendMessage)
         {
             if (faction == Faction.OfPlayer)
             {
                 List<Pawn> p = new List<Pawn>(pawns);
                 if (p.Count > 0)
                 {
-                    foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(p[0].Map))
+                    foreach (Building_InfiniteStorage storage in WorldComp.GetAllInfiniteStorages())
                     {
-                        storage.CanAutoCollect = true;
-                        storage.Reclaim();
-                    }
-                }
-            }
-        }
-    }
-
-    [HarmonyPatch(
-        typeof(CaravanExitMapUtility), "ExitMapAndCreateCaravan",
-        new Type[] { typeof(IEnumerable<Pawn>), typeof(Faction), typeof(int) })]
-    static class Patch_CaravanExitMapUtility_ExitMapAndCreateCaravan_2
-    {
-        static void Prefix(IEnumerable<Pawn> pawns, Faction faction, int startingTile)
-        {
-            if (faction == Faction.OfPlayer)
-            {
-                List<Pawn> p = new List<Pawn>(pawns);
-                if (p.Count > 0)
-                {
-                    foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(p[0].Map))
-                    {
-                        storage.CanAutoCollect = true;
                         storage.Reclaim();
                     }
                 }
@@ -649,20 +574,27 @@ namespace InfiniteStorage
     {
         static void Postfix(Thing __result, Pawn pawn)
         {
+            bool found = false;
             if (pawn != null && __result == null)
             {
                 foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
                 {
                     List<Thing> list;
-                    if (storage.TryRemove(ThingDefOf.Component, 1, out list))
+                    if (storage.TryRemove(ThingDefOf.ComponentIndustrial, 1, out list))
                     {
+                        found = true;
                         foreach (Thing t in list)
                         {
                             BuildingUtil.DropThing(t, storage, storage.Map, false);
                         }
                     }
                 }
-                __result = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.Component), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger(), TraverseMode.ByPawn, false), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x, 1, -1, null, false), null, 0, -1, false, RegionType.Set_Passable, false);
+                if (found)
+                {
+                    __result = GenClosest.ClosestThingReachable(
+                        pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.ComponentIndustrial), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger(), 
+                        TraverseMode.ByPawn, false), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x, 1, -1, null, false), null, 0, -1, false, RegionType.Set_Passable, false);
+                }
             }
         }
     }
@@ -674,10 +606,10 @@ namespace InfiniteStorage
     {
         static void Postfix(ref int __result, RecipeWorkerCounter __instance, Bill_Production bill)
         {
-            List<ThingCountClass> products = __instance.recipe.products;
+            List<ThingDefCountClass> products = __instance.recipe.products;
             if (WorldComp.HasInfiniteStorages(bill.Map) && products != null)
             {
-                foreach (ThingCountClass product in products)
+                foreach (ThingDefCountClass product in products)
                 {
                     ThingDef def = product.thingDef;
                     foreach (Building_InfiniteStorage s in WorldComp.GetInfiniteStorages(bill.Map))

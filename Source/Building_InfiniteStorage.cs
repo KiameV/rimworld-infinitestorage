@@ -108,12 +108,12 @@ namespace InfiniteStorage
             }
         }
 
-        public override void DeSpawn()
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
         {
             try
             {
                 this.Dispose();
-                base.DeSpawn();
+                base.DeSpawn(mode);
             }
             catch (Exception e)
             {
@@ -180,7 +180,7 @@ namespace InfiniteStorage
             }
         }
 
-        public void Reclaim(bool respectReserved = true, List<ThingAmount> chosen = null)
+        public void Reclaim(bool respectReserved = true, List<ThingCount> chosen = null)
         {
             if (this.IsOperational && this.CanAutoCollect)
             {
@@ -213,13 +213,13 @@ namespace InfiniteStorage
             }
         }
 
-        private bool ChosenContains(Thing t, List<ThingAmount> chosen)
+        private bool ChosenContains(Thing t, List<ThingCount> chosen)
         {
             if (chosen != null)
             {
-                foreach (ThingAmount ta in chosen)
+                foreach (ThingCount ta in chosen)
                 {
-                    if (ta.thing == t)
+                    if (ta.Thing == t)
                         return true;
                 }
             }
@@ -388,7 +388,8 @@ namespace InfiniteStorage
                 if (l.Count > 0)
                 {
                     ThingDef def = l.First.Value.def;
-                    if (def.IsMedicine || (includeBodyParts && def.isBodyPartOrImplant))
+                    if (def.IsMedicine || 
+                        (includeBodyParts && def.thingCategories.Contains(ThingCategoryDefOf.BodyParts)))
                     {
                         rv.AddRange(l);
                         if (remove == true)
@@ -805,7 +806,7 @@ namespace InfiniteStorage
 
             if (this.includeInWorldLookup)
             {
-                return SaveStorageSettingsUtil.SaveStorageSettingsGizmoUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
+                return SaveStorageSettingsUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
             }
             return l;
         }
@@ -823,7 +824,7 @@ namespace InfiniteStorage
 #if DEBUG
                 Log.Warning("Did not find InfiniteStorageType def = " + def.label);
 #endif
-            return SaveStorageSettingsUtil.SaveTypeEnum.Zone_Stockpile.ToString();
+            return SaveTypeEnum.Zone_Stockpile.ToString();
         }
 
         private bool GetIncludeInWorldLookup()

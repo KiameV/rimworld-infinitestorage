@@ -82,7 +82,7 @@ namespace InfiniteStorage
 #if MED_DEBUG
                 Log.Warning("HealthCardUtility.DrawMedOperationsTab");
 #endif
-                Map map = Find.VisibleMap;
+                Map map = Find.CurrentMap;
                 if (map != null)
                 {
 #if MED_DEBUG

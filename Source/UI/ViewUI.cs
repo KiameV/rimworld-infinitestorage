@@ -68,7 +68,7 @@ namespace InfiniteStorage.UI
         {
             this.InfiniteStorage = thingStorage;
 
-            this.closeOnEscapeKey = true;
+            this.closeOnClickedOutside = true;
             this.doCloseButton = true;
             this.doCloseX = true;
             this.absorbInputAroundWindow = true;

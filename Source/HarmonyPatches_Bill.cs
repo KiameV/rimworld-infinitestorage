@@ -146,7 +146,7 @@ namespace InfiniteStorage
             /*static FieldInfo NewRelativeThingsFI = null, ProcessedThingsFI = null, IngredientsOrderedFI = null, RelevantThingsFI = null;
             static MethodInfo GetBillGiverRootCellFI = null, MakeIngredientsListInProcessingOrderFI = null, TryFindBestBillIngredientsInSetFI = null, AddEveryMedicineToRelevantThingsFI = null;
 
-            static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
+            static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
             {
 #if BILL_DEBUG
                 Log.Warning("TryFindBestBillIngredients postfix");
@@ -289,10 +289,10 @@ namespace InfiniteStorage
                 // BEGIN inserted Code
                 if (__result == true)
                 {
-                    foreach (ThingAmount a in chosen)
+                    foreach (ThingCount a in chosen)
                     {
 #if BILL_DEBUG
-                        Log.Warning("3 ThingAmount: Thing: " + a.thing.Label + " Count: " + a.count + " Is Spawned: " + a.thing.Spawned);
+                        Log.Warning("3 ThingCount: Thing: " + a.thing.Label + " Count: " + a.count + " Is Spawned: " + a.thing.Spawned);
 #endif
                         if (!a.thing.Spawned)
                         {
@@ -317,7 +317,7 @@ namespace InfiniteStorage
             private static Stack<Building_InfiniteStorage> emptied = new Stack<Building_InfiniteStorage>();
 
             [HarmonyPriority(Priority.First)]
-            static void Prefix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
+            static void Prefix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
             {
                 if (bill == null ||
                     bill.recipe == null ||
@@ -335,7 +335,7 @@ namespace InfiniteStorage
             }
 
             [HarmonyPriority(Priority.Last)]
-            static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
+            static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
             {
                 if (bill.Map == null)
                 {
@@ -358,7 +358,7 @@ namespace InfiniteStorage
                 List<Thing> processedThings = new List<Thing>((HashSet<Thing>)typeof(WorkGiver_DoBill).GetField("processedThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null));
 #if BILL_DEBUG
                 Log.Warning("TryFindBestBillIngredients.Postfix __result: " + __result + " bill: " + bill.Label + " chosenAmounts orig count: " + chosen.Count + " processed thigns: " + processedThings.Count);
-                foreach(ThingAmount a in chosen)
+                foreach(ThingCount a in chosen)
                 {
                     Log.Warning("    pre chosen: " + a.thing.Label + " " + a.thing.stackCount + " " + a.count);
                 }
@@ -368,18 +368,18 @@ namespace InfiniteStorage
                 }
 #endif
                 Dictionary<ThingDef, int> chosenAmounts = new Dictionary<ThingDef, int>();
-                foreach (ThingAmount c in chosen)
+                foreach (ThingCount c in chosen)
                 {
                     int count;
-                    if (chosenAmounts.TryGetValue(c.thing.def, out count))
+                    if (chosenAmounts.TryGetValue(c.Thing.def, out count))
                     {
-                        count += c.count;
+                        count += c.Count;
                     }
                     else
                     {
-                        count = c.count;
+                        count = c.Count;
                     }
-                    chosenAmounts[c.thing.def] = count;
+                    chosenAmounts[c.Thing.def] = count;
                 }
 
 #if BILL_DEBUG
@@ -451,7 +451,7 @@ namespace InfiniteStorage
                                 {
                                     int amount = Math.Min(neededIng.Count, t.stackCount);
                                     neededIng.Count -= amount;
-                                    chosen.Add(new ThingAmount(t, amount));
+                                    chosen.Add(new ThingCount(t, amount));
                                     processedThings.RemoveAt(i);
 #if BILL_DEBUG
                                     Log.Warning("            neededIng processedThings found: " + t.Label + " count: " + amount + " neededIng count: " + neededIng.Count);
@@ -526,7 +526,7 @@ namespace InfiniteStorage
 #if BILL_DEBUG
                                     Log.Warning("        Dropped: " + t.Label);
 #endif
-                                        chosen.Add(new ThingAmount(t, t.stackCount));
+                                        chosen.Add(new ThingCount(t, t.stackCount));
                                     }
                                 }
                             }
@@ -536,7 +536,7 @@ namespace InfiniteStorage
                 
 #if BILL_DEBUG
                 StringBuilder sb = new StringBuilder();
-                foreach(ThingAmount ta in chosen)
+                foreach(ThingCount ta in chosen)
                 {
                     if (sb.Length > 0)
                         sb.Append(", ");

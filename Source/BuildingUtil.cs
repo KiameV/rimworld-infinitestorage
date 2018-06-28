@@ -33,8 +33,7 @@ namespace InfiniteStorage
             }
             return list;
         }
-
-        private static Random random = null;
+        
         public static void DropThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = true)
         {
 #if DEBUG || DROP_DEBUG
@@ -64,7 +63,7 @@ namespace InfiniteStorage
             }
         }
 
-        public static void DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, List<ThingAmount> droppedThings)
+        public static void DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, List<ThingCount> droppedThings)
         {
             try
             {
@@ -74,7 +73,7 @@ namespace InfiniteStorage
                 DropThing(toDrop, amountToDrop, from, map, false, d);
                 foreach (Thing dropped in d)
                 {
-                    droppedThings.Add(new ThingAmount(dropped, dropped.stackCount));
+                    droppedThings.Add(new ThingCount(dropped, dropped.stackCount));
                 }
                 d.Clear();
             }

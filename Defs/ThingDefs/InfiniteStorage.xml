@@ -25,7 +25,7 @@
 		</stuffCategories>
 		<costStuffCount>20</costStuffCount>
 		<costList>
-			<Component>4</Component>
+			<ComponentSpacer>4</ComponentSpacer>
 			<Steel>80</Steel>
 		</costList>
 		<defaultPlacingRot>South</defaultPlacingRot>
@@ -46,7 +46,6 @@
 		<comps>
 			<li Class="CompProperties_Power">
 				<compClass>CompPowerTrader</compClass>
-				<startElectricalFires>true</startElectricalFires>
 				<basePowerConsumption>0</basePowerConsumption>
 				<shortCircuitInRain>false</shortCircuitInRain>
 			</li>
