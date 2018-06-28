@@ -180,7 +180,7 @@ namespace InfiniteStorage
             }
         }
 
-        public void Reclaim(bool respectReserved = false)
+        public void Reclaim(bool respectReserved = true, List<ThingAmount> chosen = null)
         {
             if (this.IsOperational && this.CanAutoCollect)
             {
@@ -197,17 +197,33 @@ namespace InfiniteStorage
 
                 foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
                 {
-                    if (this.UsesPower && Settings.EnableEnergyBuffer)
+                    if (chosen == null || !this.ChosenContains(t, chosen))
                     {
-                        float newWeight = this.storedWeight + this.GetThingWeight(t, t.stackCount);
-                        if (newWeight * Settings.EnergyFactor > powerAvailable)
+                        if (this.UsesPower && Settings.EnableEnergyBuffer)
                         {
-                            continue;
+                            float newWeight = this.storedWeight + this.GetThingWeight(t, t.stackCount);
+                            if (newWeight * Settings.EnergyFactor > powerAvailable)
+                            {
+                                continue;
+                            }
                         }
+                        this.Add(t);
                     }
-                    this.Add(t);
                 }
             }
+        }
+
+        private bool ChosenContains(Thing t, List<ThingAmount> chosen)
+        {
+            if (chosen != null)
+            {
+                foreach (ThingAmount ta in chosen)
+                {
+                    if (ta.thing == t)
+                        return true;
+                }
+            }
+            return false;
         }
 
         public int StoredThingCount(ThingDef expectedDef, ThingFilter ingrediantFilter)

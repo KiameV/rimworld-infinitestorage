@@ -314,25 +314,47 @@ namespace InfiniteStorage
                 relevantThings.Clear();
                 // END inserted code
             }*/
+            private static Stack<Building_InfiniteStorage> emptied = new Stack<Building_InfiniteStorage>();
 
-            static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
+            [HarmonyPriority(Priority.First)]
+            static void Prefix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
             {
-                if (bill == null || 
-                    bill.recipe == null || 
+                if (bill == null ||
+                    bill.recipe == null ||
                     bill.recipe.workSkill == SkillDefOf.Cooking)
                 {
-                    return;
+                    foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(bill.Map))
+                    {
+                        if (storage.def.defName.Equals("IS_MeatStorage"))
+                        {
+                            emptied.Add(storage);
+                            storage.Empty();
+                        }
+                    }
                 }
+            }
 
+            [HarmonyPriority(Priority.Last)]
+            static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingAmount> chosen)
+            {
                 if (bill.Map == null)
                 {
                     Log.Error("Bill's map is null");
                     return;
                 }
 
-                if (__result == true || !WorldComp.HasInfiniteStorages(bill.Map) || bill.Map != pawn.Map)
+                if ((bill == null || bill.recipe == null || bill.recipe.workSkill == SkillDefOf.Cooking) || 
+                    (__result == true || !WorldComp.HasInfiniteStorages(bill.Map) || bill.Map != pawn.Map))
+                {
+                    while (emptied.Count != 0)
+                    {
+                        Building_InfiniteStorage storage = emptied.Pop();
+                        storage.CanAutoCollect = true;
+                        storage.Reclaim(true, chosen);
+                    }
                     return;
-                
+                }
+
                 List<Thing> processedThings = new List<Thing>((HashSet<Thing>)typeof(WorkGiver_DoBill).GetField("processedThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null));
 #if BILL_DEBUG
                 Log.Warning("TryFindBestBillIngredients.Postfix __result: " + __result + " bill: " + bill.Label + " chosenAmounts orig count: " + chosen.Count + " processed thigns: " + processedThings.Count);

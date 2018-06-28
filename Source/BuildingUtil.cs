@@ -155,7 +155,7 @@ namespace InfiniteStorage
                 Thing t;
                 if (!toDrop.Spawned)
                 {
-                    if (!GenThing.TryDropAndSetForbidden(toDrop, from.Position, map, ThingPlaceMode.Near, out t, makeForbidden))
+                    if (!GenThing.TryDropAndSetForbidden(toDrop, from.InteractionCell, map, ThingPlaceMode.Near, out t, makeForbidden))
                     {
 #if DEBUG || DROP_DEBUG
                         Log.Warning("    First Drop Attempt failed " + t.Label);
@@ -171,21 +171,8 @@ namespace InfiniteStorage
                         }
                     }
                 }
-                if (toDrop.Position.Equals(from.Position))
-                {
-                    IntVec3 pos = toDrop.Position;
-                    if (random == null)
-                        random = new Random();
-                    int dir = random.Next(2);
-                    int amount = random.Next(2);
-                    if (amount == 0)
-                        amount = -1;
-                    if (dir == 0)
-                        pos.x = pos.x + amount;
-                    else
-                        pos.z = pos.z + amount;
-                    toDrop.Position = pos;
-                }
+
+                toDrop.Position = from.InteractionCell;
             }
             catch (Exception e)
             {
