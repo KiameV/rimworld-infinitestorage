@@ -168,10 +168,10 @@ namespace InfiniteStorage
                     {
                         BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false, droppedThings);
                     }
+                    l.Clear();
                 }
                 this.storedCount = 0;
                 this.storedWeight = 0;
-                this.storedThings.Clear();
             }
             finally
             {
@@ -230,7 +230,7 @@ namespace InfiniteStorage
         {
             int count = 0;
             LinkedList<Thing> l;
-            if (this.storedThings.TryGetValue(expectedDef.label, out l))
+            if (this.storedThings.TryGetValue(expectedDef.ToString(), out l))
             {
                 foreach (Thing t in l)
                 {
@@ -349,7 +349,7 @@ namespace InfiniteStorage
 
             int thingsAdded = thing.stackCount;
             LinkedList<Thing> l;
-            if (this.storedThings.TryGetValue(thing.def.label, out l))
+            if (this.storedThings.TryGetValue(thing.def.ToString(), out l))
             {
                 bool absorbed = false;
                 foreach (Thing t in l)
@@ -369,7 +369,7 @@ namespace InfiniteStorage
             {
                 l = new LinkedList<Thing>();
                 l.AddFirst(thing);
-                this.storedThings.Add(thing.def.label, l);
+                this.storedThings.Add(thing.def.ToString(), l);
             }
             this.UpdateStoredStats(thing, thingsAdded, true);
             return true;
@@ -427,13 +427,21 @@ namespace InfiniteStorage
 
         public bool TryGetValue(ThingDef def, out Thing t)
         {
-            LinkedList<Thing> l;
-            if (this.storedThings.TryGetValue(def.label, out l))
+            if (def == null)
+                Log.Warning("def is null");
+            else
+                Log.Warning("def is: " + def.ToString());
+
+            if (def != null)
             {
-                if (l.Count > 0)
+                LinkedList<Thing> l;
+                if (this.storedThings.TryGetValue(def.ToString(), out l))
                 {
-                    t = l.First.Value;
-                    return true;
+                    if (l.Count > 0)
+                    {
+                        t = l.First.Value;
+                        return true;
+                    }
                 }
             }
             t = null;
@@ -459,7 +467,7 @@ namespace InfiniteStorage
         public bool TryRemove(Thing thing)
         {
             LinkedList<Thing> l;
-            if (this.storedThings.TryGetValue(thing.def.label, out l))
+            if (this.storedThings.TryGetValue(thing.def.ToString(), out l))
             {
                 if (l.Remove(thing))
                 {
@@ -473,9 +481,9 @@ namespace InfiniteStorage
         public bool TryRemove(ThingDef def, out IEnumerable<Thing> removed)
         {
             LinkedList<Thing> l;
-            if (this.storedThings.TryGetValue(def.label, out l))
+            if (this.storedThings.TryGetValue(def.ToString(), out l))
             {
-                this.storedThings.Remove(def.label);
+                this.storedThings.Remove(def.ToString());
                 removed = l;
                 foreach (Thing t in l)
                 {
@@ -499,7 +507,7 @@ namespace InfiniteStorage
 #endif
             LinkedList<Thing> l;
             removed = null;
-            if (this.storedThings.TryGetValue(def.label, out l))
+            if (this.storedThings.TryGetValue(def.ToString(), out l))
             {
                 int need = count;
                 int removeCount = 0;

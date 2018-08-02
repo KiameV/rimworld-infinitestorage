@@ -209,27 +209,29 @@ namespace InfiniteStorage
             {
                 foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
                 {
-                    Thing thing;
                     if (storage.IsOperational &&
                         storage.Spawned &&
-                        need != null && need.thing != null &&
-                        storage.TryGetValue(need.thing.def, out thing))
+                        need != null && need.thing != null)
                     {
-                        if (thing.stackCount >= need.Count)
+                        Thing thing;
+                        if (storage.TryGetValue(need.thing.def, out thing))
                         {
-                            List<Thing> removed;
-                            int toDrop = (need.Count < thing.def.stackLimit) ? thing.def.stackLimit : need.Count;
-                            if (storage.TryRemove(thing, toDrop, out removed))
+                            if (thing.stackCount >= need.Count)
                             {
-                                foreach (Thing t in removed)
+                                List<Thing> removed;
+                                int toDrop = (need.Count < thing.def.stackLimit) ? thing.def.stackLimit : need.Count;
+                                if (storage.TryRemove(thing, toDrop, out removed))
                                 {
-                                    BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false);
-                                }
+                                    foreach (Thing t in removed)
+                                    {
+                                        BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false);
+                                    }
 
-                                __result = true;
-                                ((Dictionary<int, bool>)CachedResultsFI.GetValue(__instance))[Gen.HashCombine<Faction>(need.GetHashCode(), pawn.Faction)] = __result;
+                                    __result = true;
+                                    ((Dictionary<int, bool>)CachedResultsFI.GetValue(__instance))[Gen.HashCombine<Faction>(need.GetHashCode(), pawn.Faction)] = __result;
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
