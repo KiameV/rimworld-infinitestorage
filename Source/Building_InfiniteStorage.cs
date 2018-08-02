@@ -427,11 +427,6 @@ namespace InfiniteStorage
 
         public bool TryGetValue(ThingDef def, out Thing t)
         {
-            if (def == null)
-                Log.Warning("def is null");
-            else
-                Log.Warning("def is: " + def.ToString());
-
             if (def != null)
             {
                 LinkedList<Thing> l;
