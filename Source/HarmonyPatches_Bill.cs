@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using Verse;
 using Verse.AI;
@@ -143,178 +144,32 @@ namespace InfiniteStorage
         [HarmonyPatch(typeof(WorkGiver_DoBill), "TryFindBestBillIngredients")]
         static class Patch_WorkGiver_DoBill_TryFindBestBillIngredients
         {
-            /*static FieldInfo NewRelativeThingsFI = null, ProcessedThingsFI = null, IngredientsOrderedFI = null, RelevantThingsFI = null;
-            static MethodInfo GetBillGiverRootCellFI = null, MakeIngredientsListInProcessingOrderFI = null, TryFindBestBillIngredientsInSetFI = null, AddEveryMedicineToRelevantThingsFI = null;
-
-            static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
-            {
-#if BILL_DEBUG
-                Log.Warning("TryFindBestBillIngredients postfix");
-#endif
-                if (__result == true)
-                {
-                    return;
-                }
-
-                if (NewRelativeThingsFI == null)
-                {
-                    NewRelativeThingsFI = typeof(WorkGiver_DoBill).GetField("newRelevantThings", BindingFlags.Static | BindingFlags.NonPublic);
-                    ProcessedThingsFI = typeof(WorkGiver_DoBill).GetField("processedThings", BindingFlags.Static | BindingFlags.NonPublic);
-                    IngredientsOrderedFI = typeof(WorkGiver_DoBill).GetField("ingredientsOrdered", BindingFlags.Static | BindingFlags.NonPublic);
-                    RelevantThingsFI = typeof(WorkGiver_DoBill).GetField("relevantThings", BindingFlags.Static | BindingFlags.NonPublic);
-
-                    GetBillGiverRootCellFI = typeof(WorkGiver_DoBill).GetMethod("GetBillGiverRootCell", BindingFlags.Static | BindingFlags.NonPublic);
-                    MakeIngredientsListInProcessingOrderFI = typeof(WorkGiver_DoBill).GetMethod("MakeIngredientsListInProcessingOrder", BindingFlags.Static | BindingFlags.NonPublic);
-                    TryFindBestBillIngredientsInSetFI = typeof(WorkGiver_DoBill).GetMethod("TryFindBestBillIngredientsInSet", BindingFlags.Static | BindingFlags.NonPublic);
-                    AddEveryMedicineToRelevantThingsFI = typeof(WorkGiver_DoBill).GetMethod("AddEveryMedicineToRelevantThings", BindingFlags.Static | BindingFlags.NonPublic);
-                }
-
-                List<Thing> newRelevantThings = (List<Thing>)NewRelativeThingsFI.GetValue(null);
-                HashSet<Thing> processedThings = (HashSet<Thing>)ProcessedThingsFI.GetValue(null);
-                List<IngredientCount> ingredientsOrdered = (List<IngredientCount>)IngredientsOrderedFI.GetValue(null);
-                List<Thing> relevantThings = (List<Thing>)RelevantThingsFI.GetValue(null);
-
-                chosen.Clear();
-                newRelevantThings.Clear();
-                if (bill.recipe.ingredients.Count == 0)
-                {
-#if BILL_DEBUG
-                    Log.Warning("bill.recipe.ingredients.Count == 0");
-#endif
-                    __result = true;
-                    return;
-                }
-                IntVec3 rootCell = (IntVec3)GetBillGiverRootCellFI.Invoke(null, new object[] { billGiver, pawn });
-                Region rootReg = rootCell.GetRegion(pawn.Map, RegionType.Set_Passable);
-                if (rootReg == null)
-                {
-#if BILL_DEBUG
-                    Log.Warning("rootReg == null");
-#endif
-                    __result = true;
-                    return;
-                }
-                MakeIngredientsListInProcessingOrderFI.Invoke(null, new object[] { ingredientsOrdered, bill });
-                newRelevantThings.Clear();
-                processedThings.Clear();
-                bool foundAll = false;
-                
-                // BEGIN inserted Code
-                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(bill.Map))
-                {
-                    if ((float)(storage.Position - billGiver.Position).LengthHorizontalSquared < Math.Pow(bill.ingredientSearchRadius, 2))
-                    {
-                        List<Thing> gotten;
-                        if (storage.TryGetFilteredThings(bill, bill.ingredientFilter, out gotten))
-                        {
-#if BILL_DEBUG
-                            StringBuilder sb = new StringBuilder("Adding From Storage: " + gotten.Count + Environment.NewLine);
-#endif
-                            relevantThings.AddRange(gotten);
-                        }
-                    }
-                }
-                // END inserted code
-
-                Predicate<Thing> baseValidator = (Thing t) => t.Spawned && !t.IsForbidden(pawn) && (float)(t.Position - billGiver.Position).LengthHorizontalSquared < bill.ingredientSearchRadius * bill.ingredientSearchRadius && bill.IsFixedOrAllowedIngredient(t) && bill.recipe.ingredients.Any((IngredientCount ingNeed) => ingNeed.filter.Allows(t)) && pawn.CanReserve(t, 1, -1, null, false);
-                bool billGiverIsPawn = billGiver is Pawn;
-                if (billGiverIsPawn)
-                {
-                    AddEveryMedicineToRelevantThingsFI.Invoke(null, new object[] { pawn, billGiver, relevantThings, baseValidator, pawn.Map });
-                    if ((bool)TryFindBestBillIngredientsInSetFI.Invoke(null, new object[] { relevantThings, bill, chosen }))
-                    {
-#if BILL_DEBUG
-                        Log.Warning("billGiverIsPawn && medicin && TryFindBestBillIngredientsInSet");
-#endif
-                        __result = true;
-                        return;
-                    }
-                }
-                TraverseParms traverseParams = TraverseParms.For(pawn, Danger.Deadly, TraverseMode.ByPawn, false);
-                RegionEntryPredicate entryCondition = (Region from, Region r) => r.Allows(traverseParams, false);
-                int adjacentRegionsAvailable = rootReg.Neighbors.Count((Region region) => entryCondition(rootReg, region));
-                int regionsProcessed = 0;
-                processedThings.AddRange(relevantThings);
-                RegionProcessor regionProcessor = delegate (Region r)
-                {
-                    List<Thing> list = r.ListerThings.ThingsMatching(ThingRequest.ForGroup(ThingRequestGroup.HaulableEver));
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        Thing thing = list[i];
-                        if (!processedThings.Contains(thing))
-                        {
-                            if (ReachabilityWithinRegion.ThingFromRegionListerReachable(thing, r, PathEndMode.ClosestTouch, pawn))
-                            {
-                                if (baseValidator(thing) && (!thing.def.IsMedicine || !billGiverIsPawn))
-                                {
-                                    newRelevantThings.Add(thing);
-                                    processedThings.Add(thing);
-                                }
-                            }
-                        }
-                    }
-                    regionsProcessed++;
-                    if (newRelevantThings.Count > 0 && regionsProcessed > adjacentRegionsAvailable)
-                    {
-                        Comparison<Thing> comparison = delegate (Thing t1, Thing t2)
-                        {
-                            float num = (float)(t1.Position - rootCell).LengthHorizontalSquared;
-                            float value = (float)(t2.Position - rootCell).LengthHorizontalSquared;
-                            return num.CompareTo(value);
-                        };
-                        newRelevantThings.Sort(comparison);
-                        relevantThings.AddRange(newRelevantThings);
-                        newRelevantThings.Clear();
-#if BILL_DEBUG
-                        Log.Warning("1 relative things: " + relevantThings.Count + "chosen: " + chosen.Count);
-                        //foreach (Thing t in relevantThings)
-                        //    Log.Error("    " + t.Label);
-#endif
-                        if ((bool)TryFindBestBillIngredientsInSetFI.Invoke(null, new object[] { relevantThings, bill, chosen }))
-                        {
-#if BILL_DEBUG
-                            Log.Warning("2 relative things: " + relevantThings.Count + "chosen: " + chosen.Count);
-#endif
-                            foundAll = true;
-                            return true;
-                        }
-                    }
-                    return false;
-                };
-
-                RegionTraverser.BreadthFirstTraverse(rootReg, entryCondition, regionProcessor, 99999, RegionType.Set_Passable);
-                newRelevantThings.Clear();
-                __result = foundAll;
-
-                // BEGIN inserted Code
-                if (__result == true)
-                {
-                    foreach (ThingCount a in chosen)
-                    {
-#if BILL_DEBUG
-                        Log.Warning("3 ThingCount: Thing: " + a.thing.Label + " Count: " + a.count + " Is Spawned: " + a.thing.Spawned);
-#endif
-                        if (!a.thing.Spawned)
-                        {
-                            foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(bill.Map))
-                            {
-                                int remaining = a.count;
-                                Thing removed;
-                                while (remaining > 0 &&
-                                       storage.TryRemove(a.thing.def, a.count, out removed))
-                                {
-                                    remaining -= removed.stackCount;
-
-                                    BuildingUtil.DropThing(removed, removed.stackCount, storage, storage.Map, false);
-                                }
-                            }
-                        }
-                    }
-                }
-                relevantThings.Clear();
-                // END inserted code
-            }*/
             private static Stack<Building_InfiniteStorage> emptied = new Stack<Building_InfiniteStorage>();
+
+            [HarmonyPriority(Priority.VeryHigh)]
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                List<CodeInstruction> l = new List<CodeInstruction>(instructions);
+                for (int i = l.Count - 1, clearCount = 0; i > l.Count - 20 && clearCount < 4; --i)
+                {
+                    /*
+                     * Remove clear calls for:
+                     *  WorkGiver_DoBill.relevantThings.Clear();
+                     *  WorkGiver_DoBill.newRelevantThings.Clear();
+                     *  WorkGiver_DoBill.processedThings.Clear();
+                     *  WorkGiver_DoBill.ingredientsOrdered.Clear();
+                     */
+                    if (l[i].opcode == OpCodes.Callvirt)
+                    {
+                        l[i].opcode = OpCodes.Nop;
+                        l[i].operand = null;
+                        l[i - 1].opcode = OpCodes.Nop;
+                        l[i - 1].operand = null;
+                        ++clearCount;
+                    }
+                }
+                return l;
+            }
 
             [HarmonyPriority(Priority.First)]
             static void Prefix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
@@ -325,25 +180,29 @@ namespace InfiniteStorage
                 {
                     foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(bill.Map))
                     {
-                        if (storage.def.defName.Equals("IS_MeatStorage"))
+                        if (bill is Bill_Production && storage.def.defName.Equals("IS_MeatStorage"))
                         {
-                            emptied.Add(storage);
-                            storage.Empty();
+                            if (!bill.suspended && !((Bill_Production)bill).paused)
+                            {
+                                if (storage.DropMeatThings(bill))
+                                {
+                                    emptied.Add(storage);
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            [HarmonyPriority(Priority.Last)]
+            [HarmonyPriority(Priority.VeryHigh)]
             static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
             {
-                if (bill.Map == null)
-                {
-                    Log.Error("Bill's map is null");
-                    return;
-                }
+                List<Thing> processedThings = new List<Thing>((HashSet<Thing>)typeof(WorkGiver_DoBill).GetField("processedThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null));
+                List<Thing> relevantThings = (List<Thing>)typeof(WorkGiver_DoBill).GetField("relevantThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+                List<Thing> newRelevantThings = (List<Thing>)typeof(WorkGiver_DoBill).GetField("newRelevantThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+                List<IngredientCount> ingredientsOrdered = (List<IngredientCount>)typeof(WorkGiver_DoBill).GetField("ingredientsOrdered", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
 
-                if ((bill == null || bill.recipe == null || bill.recipe.workSkill == SkillDefOf.Cooking) || 
+                if ((bill == null || bill.recipe == null || bill.recipe.workSkill == SkillDefOf.Cooking) ||
                     (__result == true || !WorldComp.HasInfiniteStorages(bill.Map) || bill.Map != pawn.Map))
                 {
                     while (emptied.Count != 0)
@@ -355,16 +214,53 @@ namespace InfiniteStorage
                     return;
                 }
 
-                List<Thing> processedThings = new List<Thing>((HashSet<Thing>)typeof(WorkGiver_DoBill).GetField("processedThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null));
+                try
+                {
+                    Process(ref __result, bill, pawn, billGiver, chosen, processedThings, relevantThings, newRelevantThings, ingredientsOrdered);
+                }
+                finally
+                {
+                    processedThings.Clear();
+                    relevantThings.Clear();
+                    newRelevantThings.Clear();
+                    ingredientsOrdered.Clear();
+                }
+            }
+
+            private static void Process(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen, List<Thing> processedThings, List<Thing> relevantThings, List<Thing> newRelevantThings, List<IngredientCount> ingredientsOrdered)
+            {
+
 #if BILL_DEBUG
                 Log.Warning("TryFindBestBillIngredients.Postfix __result: " + __result + " bill: " + bill.Label + " chosenAmounts orig count: " + chosen.Count + " processed thigns: " + processedThings.Count);
-                foreach(ThingCount a in chosen)
+
+                Log.Warning("    Chosen:");
+                foreach (ThingCount a in chosen)
                 {
-                    Log.Warning("    pre chosen: " + a.thing.Label + " " + a.thing.stackCount + " " + a.count);
+                    Log.Warning("        " + a.Thing.Label + " " + a.Thing.stackCount + " " + a.Count);
                 }
-                foreach(Thing t in processedThings)
+
+                Log.Warning("    WorkGiver_DoBill.Processed:");
+                foreach (Thing t in processedThings)
                 {
-                    Log.Warning("    pre processed: " + t.Label);
+                    Log.Warning("        " + t.Label);
+                }
+
+                Log.Warning("    WorkGiver_DoBill.RelevantThings:");
+                foreach (Thing t in (List<Thing>)typeof(WorkGiver_DoBill).GetField("relevantThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null))
+                {
+                    Log.Warning("        " + t.Label);
+                }
+
+                Log.Warning("    WorkGiver_DoBill.NewRelevantThings:");
+                foreach (Thing t in (List<Thing>)typeof(WorkGiver_DoBill).GetField("newRelevantThings", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null))
+                {
+                    Log.Warning("        " + t.Label);
+                }
+
+                Log.Warning("    WorkGiver_DoBill.IngredientsOrdered:");
+                foreach (IngredientCount i in (List<IngredientCount>)typeof(WorkGiver_DoBill).GetField("ingredientsOrdered", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null))
+                {
+                    Log.Warning("        " + i.Summary);
                 }
 #endif
                 Dictionary<ThingDef, int> chosenAmounts = new Dictionary<ThingDef, int>();
@@ -443,7 +339,7 @@ namespace InfiniteStorage
                         {
                             var next = n.Next;
                             NeededIngrediants neededIng = n.Value;
-                            
+
                             for (int i = processedThings.Count - 1; i >= 0 && neededIng.Count > 0; --i)
                             {
                                 Thing t = processedThings[i];
@@ -479,11 +375,7 @@ namespace InfiniteStorage
                             if (neededIng.CountReached() || neededIng.Count <= 0)
                             {
 #if BILL_DEBUG
-                                Log.Warning("                    -removing ing ");
-                                /*foreach(ThingDef d in neededIng.Filter.AllowedThingDefs)
-                                {
-                                    Log.Warning("                        " + d.label);
-                                }*/
+                                Log.Warning("                    -removing ing " + neededIng.Count);
 #endif
                                 if (neededIng.HasFoundThings())
                                     thingsToUse.Add(new ThingsToUse(neededIng.GetFoundThings(), neededIng.Count));
@@ -524,7 +416,7 @@ namespace InfiniteStorage
                                     foreach (Thing t in dropped)
                                     {
 #if BILL_DEBUG
-                                    Log.Warning("        Dropped: " + t.Label);
+                                        Log.Warning("        Dropped: " + t.Label);
 #endif
                                         chosen.Add(new ThingCount(t, t.stackCount));
                                     }
@@ -533,18 +425,18 @@ namespace InfiniteStorage
                         }
                     }
                 }
-                
+
 #if BILL_DEBUG
                 StringBuilder sb = new StringBuilder();
-                foreach(ThingCount ta in chosen)
+                foreach (ThingCount ta in chosen)
                 {
                     if (sb.Length > 0)
                         sb.Append(", ");
-                    sb.Append(ta.thing.def.defName + "x" + ta.count);
+                    sb.Append(ta.Thing.def.defName + "x" + ta.Count);
                 }
                 Log.Warning("        Chosen: [" + sb.ToString() + "]");
 #endif
-                
+
                 thingsToUse.Clear();
                 foreach (NeededIngrediants n in neededIngs)
                 {

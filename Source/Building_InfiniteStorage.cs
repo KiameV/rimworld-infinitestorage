@@ -382,6 +382,9 @@ namespace InfiniteStorage
 
         public IEnumerable<Thing> GetMedicalThings(bool includeBodyParts = true, bool remove = false)
         {
+#if MED_DEBUG
+            Log.Warning("Start GetMedicalThings");
+#endif
             List<Thing> rv = new List<Thing>();
             foreach (LinkedList<Thing> l in this.storedThings.Values)
             {
@@ -391,14 +394,24 @@ namespace InfiniteStorage
                     if (def.IsMedicine || 
                         (includeBodyParts && def.thingCategories.Contains(ThingCategoryDefOf.BodyParts)))
                     {
+#if MED_DEBUG
+                        Log.Message("    " + def.defName + " is medicine");
+#endif
                         rv.AddRange(l);
                         if (remove == true)
                         {
                             l.Clear();
                         }
                     }
+#if MED_DEBUG
+                    else
+                        Log.Message("    " + def.defName + " is not medicine");
+#endif
                 }
             }
+#if MED_DEBUG
+            Log.Warning("End GetMedicalThings " + rv.Count);
+#endif
             return rv;
         }
 
@@ -471,6 +484,69 @@ namespace InfiniteStorage
                 }
             }
             return false;
+        }
+
+        public bool DropMeatThings(Bill bill)
+        {
+            const int NEEDED = 75;
+            LinkedList<Thing> l;
+            int needed = NEEDED;
+            foreach (KeyValuePair<string, LinkedList<Thing>> kv in this.storedThings)
+            {
+                l = kv.Value;
+                if (l != null && l.Count > 0 && l.First.Value != null)
+                {
+                    if (bill.ingredientFilter.Allows(l.First.Value))
+                    {
+                        LinkedListNode<Thing> next;
+                        LinkedListNode<Thing> n = l.First;
+                        while (needed > 0 && n != null)
+                        {
+                            next = n.Next;
+                            if (n.Value == null)
+                            {
+                                l.Remove(n);
+                            }
+                            else
+                            {
+                                //UpdateStoredStats(n.Value, n.Value.stackCount, false);
+                                this.stackCount -= n.Value.stackCount;
+                                needed -= n.Value.stackCount;
+                                this.DropThing(n.Value, false);
+                                l.Remove(n);
+                            }
+                            n = next;
+                        }
+                    }
+                }
+            }
+            return needed < NEEDED;
+            /*List<string> toDrop = new List<string>();
+            LinkedList<Thing> l;
+            foreach (KeyValuePair<string, LinkedList<Thing>> kv in this.storedThings)
+            {
+                l = kv.Value;
+                if (l != null && l.Count > 0 && l.First.Value != null)
+                {
+                    if (filter.Allows(l.First.Value.def))
+                    {
+                        toDrop.Add(kv.Key);
+                    }
+                }
+            }
+
+            foreach (string s in toDrop)
+            {
+                l = this.storedThings[s];
+                foreach(Thing t in l)
+                {
+                    this.DropThing(t, false);
+                }
+                l.Clear();
+                this.storedThings.Remove(s);
+            }
+
+            return toDrop.Count > 0;*/
         }
 
         public bool TryRemove(ThingDef def, out IEnumerable<Thing> removed)

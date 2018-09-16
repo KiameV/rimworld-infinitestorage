@@ -47,6 +47,7 @@ namespace InfiniteStorage
             [HarmonyPriority(Priority.First)]
             static void Prefix(Pawn healer, Pawn patient)
             {
+                Log.Warning("FindBestMedicine Prefix");
                 foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(patient.Map))
                 {
                     IEnumerable<Thing> removed = storage.GetMedicalThings(false, true);
@@ -74,14 +75,15 @@ namespace InfiniteStorage
             [HarmonyPriority(Priority.First)]
             static void Prefix()
             {
+#if MED_DEBUG
+                Log.Warning("HealthCardUtility.DrawMedOperationsTab");
+#endif
+
                 if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Count > 0)
                 {
                     Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
                 }
 
-#if MED_DEBUG
-                Log.Warning("HealthCardUtility.DrawMedOperationsTab");
-#endif
                 Map map = Find.CurrentMap;
                 if (map != null)
                 {
@@ -114,12 +116,15 @@ namespace InfiniteStorage
             static void Postfix(ref List<Thing> __result, ThingRequestGroup group)
             {
 #if MED_DEBUG
-                Log.Warning("ListerThings.ThingsInGroup");
+                //Log.Warning("ListerThings.ThingsInGroup");
 #endif
                 if (AvailableMedicalThing.Count > 0)
                 {
 #if MED_DEBUG
-                    foreach(Thing t in AvailableMedicalThing)
+                    Log.Warning("ListerThings.ThingsInGroup");
+#endif
+#if MED_DEBUG
+                    foreach (Thing t in AvailableMedicalThing)
                         Log.Warning("    " + t.Label);
 #endif
                     __result.AddRange(AvailableMedicalThing);
