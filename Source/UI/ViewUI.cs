@@ -81,7 +81,7 @@ namespace InfiniteStorage.UI
         {
             get
             {
-                return new Vector2(500f, 650f);
+                return new Vector2(550f, 650f);
             }
         }
 
@@ -235,7 +235,12 @@ namespace InfiniteStorage.UI
 
             Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
 
-            Widgets.Label(new Rect(40, 0, r.width - (80 + HEIGHT), HEIGHT), label);
+            if (Widgets.InfoCardButton(40, 0, thing))
+            {
+                Find.WindowStack.Add(new Dialog_InfoCard(thing));
+            }
+
+            Widgets.Label(new Rect(70, 0, r.width - (80 + HEIGHT), HEIGHT), label);
 
             if (this.InfiniteStorage.IsOperational &&
                 Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
