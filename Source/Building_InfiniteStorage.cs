@@ -92,6 +92,37 @@ namespace InfiniteStorage
             }
         }
 
+        public bool TryGetFirstFilteredItem(Bill bill, ThingFilter filter, bool remove, out Thing gotten)
+        {
+            gotten = null;
+            foreach (LinkedList<Thing> l in this.storedThings.Values)
+            {
+                if (l != null && l.Count > 0)
+                {
+                    for (LinkedListNode<Thing> n = l.First; n.Next != null; n = n.Next)
+                    {
+                        Thing t = n.Value;
+                        if (!bill.IsFixedOrAllowedIngredient(t.def) || !filter.Allows(t.def))
+                            break;
+
+                        if (bill.IsFixedOrAllowedIngredient(t) && filter.Allows(t))
+                        {
+                            if (t.HitPoints == t.MaxHitPoints)
+                            {
+                                continue;
+                            }
+                            
+                            gotten = t;
+                            l.Remove(n);
+                            this.DropThing(t, false);
+                            return true;
+                        }
+                    }
+                }
+            }
+            return gotten != null;
+        }
+
         public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
         {
             try
@@ -210,6 +241,14 @@ namespace InfiniteStorage
                         this.Add(t);
                     }
                 }
+            }
+        }
+
+        public void ForceReclaim()
+        {
+            foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
+            {
+                this.Add(t);
             }
         }
 

@@ -1,0 +1,4 @@
+D:\Steam\steamapps\common\RimWorld\Mods\InfiniteStorage\Assemblies\MendingInfiniteStoragePatch.dll
+C:\Users\tofft\Documents\Visual Studio 2017\Projects\RimWorld\InfiniteStorage\Source\MendingInfiniteStoragePatch\obj\Release\MendingInfiniteStoragePatch.csprojResolveAssemblyReference.cache
+C:\Users\tofft\Documents\Visual Studio 2017\Projects\RimWorld\InfiniteStorage\Source\MendingInfiniteStoragePatch\obj\Release\MendingInfiniteStoragePatch.csproj.CoreCompileInputs.cache
+C:\Users\tofft\Documents\Visual Studio 2017\Projects\RimWorld\InfiniteStorage\Source\MendingInfiniteStoragePatch\obj\Release\MendingInfiniteStoragePatch.dll

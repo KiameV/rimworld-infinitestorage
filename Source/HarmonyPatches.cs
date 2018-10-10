@@ -23,6 +23,7 @@ namespace InfiniteStorage
                "InfiniteStorage Harmony Patches:" + Environment.NewLine +
                "  Prefix:" + Environment.NewLine +
                "    Designator_Build.ProcessInput - will block if looking for things." + Environment.NewLine +
+               "    ScribeSaver.InitSaving" + Environment.NewLine +
                "  Postfix:" + Environment.NewLine +
                "    Pawn_TraderTracker.DrawMedOperationsTab" + Environment.NewLine +
                "    Pawn_TraderTracker.ThingsInGroup" + Environment.NewLine +
@@ -105,7 +106,7 @@ namespace InfiniteStorage
     }
 #endregion
 
-#region Used for creating other buildings
+    #region Used for creating other buildings
     [HarmonyPatch(typeof(Designator_Build), "ProcessInput")]
     static class Patch_Designator_Build_ProcessInput
     {
@@ -185,7 +186,7 @@ namespace InfiniteStorage
             return false;
         }
     }
-#endregion
+    #endregion
 
     [HarmonyPatch(typeof(ItemAvailability), "ThingsAvailableAnywhere")]
     static class Patch_ItemAvailability_ThingsAvailableAnywhere
@@ -239,127 +240,139 @@ namespace InfiniteStorage
         }
     }
 
-    #region Feed Self (for animals)
-    /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]
-    static class Patch_FoodUtility_TryFindBestFoodSourceFor
+    [HarmonyPatch(typeof(ScribeSaver), "InitSaving")]
+    static class Patch_ScribeSaver_InitSaving
     {
-        static void Postfix(
-            bool __result, Pawn getter, Pawn eater, bool desperate, ref Thing foodSource, ref ThingDef foodDef,
-            bool canRefillDispenser, bool canUseInventory, bool allowForbidden,
-            bool allowCorpse, bool allowSociallyImproper, bool allowHarvest)
+        static void Prefix()
         {
-            if (eater == null || eater.needs == null || eater.needs.food == null || eater.Map == null)
-                return;
-
-            RaceProperties race = eater.def.race;
-#if DEBUG || DROP_DEBUG
-            Log.Warning("Patch_FoodUtility_TryFindBestFoodSourceFor.Postfix eater: [" + eater.Label + "] IsAnimal: [" + race.Animal + "] Faction: [" + eater.Faction + "] hasTrough: [" + WorldComp.HasNonGlobalInfiniteStorages(eater.Map) + "]");
-#endif
-            if (!__result &&
-                race.Animal &&
-                eater.needs.food.CurCategory >= HungerCategory.Hungry &&
-                eater.Faction == Faction.OfPlayer &&
-                WorldComp.HasNonGlobalInfiniteStorages(eater.Map))
+            foreach (Building_InfiniteStorage s in WorldComp.GetAllInfiniteStorages())
             {
-                bool eatsHay = race.Eats(FoodTypeFlags.Plant);
-                bool eatsKibble = race.Eats(FoodTypeFlags.Kibble);
-                int hayNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Hay);
-                int kibbleNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Kibble);
-#if DEBUG || DROP_DEBUG
-                Log.Warning("    eatsHay: [" + eatsHay + "] eatsKibble: [" + eatsKibble + "] hayNeeded: [" + hayNeeded + "] kibbleNeeded: [" + kibbleNeeded + "]");
-#endif
-                if (eatsHay || eatsKibble)
-                {
-                    foreach (Building_InfiniteStorage trough in WorldComp.GetNonGlobalInfiniteStorages(eater.Map))
-                    {
-#if DEBUG || DROP_DEBUG
-                        Log.Warning("    Trough: [" + trough.Label + "]");
-#endif
-                        if (eater.Map.reachability.CanReach(eater.Position, trough, PathEndMode.Touch, TraverseMode.PassDoors))
-                        {
-                            List<Thing> l = null;
-                            if (eatsHay)
-                            {
-                                __result = trough.TryRemove(ThingDefOf.Hay, hayNeeded, out l);
-#if DEBUG || DROP_DEBUG
-                                Log.Warning("        Hay: [" + __result + "] " + ListToString(l));
-#endif
-                            }
-                            if (!__result && eatsKibble)
-                            {
-                                __result = trough.TryRemove(ThingDefOf.Kibble, kibbleNeeded, out l);
-#if DEBUG || DROP_DEBUG
-                                Log.Warning("        Kibble: [" + __result + "]");
-#endif
-                            }
+                s.ForceReclaim();
+            }
+        }
+    }
 
-                            if (__result && l != null)
+        #region Feed Self (for animals)
+        /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]
+        static class Patch_FoodUtility_TryFindBestFoodSourceFor
+        {
+            static void Postfix(
+                bool __result, Pawn getter, Pawn eater, bool desperate, ref Thing foodSource, ref ThingDef foodDef,
+                bool canRefillDispenser, bool canUseInventory, bool allowForbidden,
+                bool allowCorpse, bool allowSociallyImproper, bool allowHarvest)
+            {
+                if (eater == null || eater.needs == null || eater.needs.food == null || eater.Map == null)
+                    return;
+
+                RaceProperties race = eater.def.race;
+    #if DEBUG || DROP_DEBUG
+                Log.Warning("Patch_FoodUtility_TryFindBestFoodSourceFor.Postfix eater: [" + eater.Label + "] IsAnimal: [" + race.Animal + "] Faction: [" + eater.Faction + "] hasTrough: [" + WorldComp.HasNonGlobalInfiniteStorages(eater.Map) + "]");
+    #endif
+                if (!__result &&
+                    race.Animal &&
+                    eater.needs.food.CurCategory >= HungerCategory.Hungry &&
+                    eater.Faction == Faction.OfPlayer &&
+                    WorldComp.HasNonGlobalInfiniteStorages(eater.Map))
+                {
+                    bool eatsHay = race.Eats(FoodTypeFlags.Plant);
+                    bool eatsKibble = race.Eats(FoodTypeFlags.Kibble);
+                    int hayNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Hay);
+                    int kibbleNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Kibble);
+    #if DEBUG || DROP_DEBUG
+                    Log.Warning("    eatsHay: [" + eatsHay + "] eatsKibble: [" + eatsKibble + "] hayNeeded: [" + hayNeeded + "] kibbleNeeded: [" + kibbleNeeded + "]");
+    #endif
+                    if (eatsHay || eatsKibble)
+                    {
+                        foreach (Building_InfiniteStorage trough in WorldComp.GetNonGlobalInfiniteStorages(eater.Map))
+                        {
+    #if DEBUG || DROP_DEBUG
+                            Log.Warning("    Trough: [" + trough.Label + "]");
+    #endif
+                            if (eater.Map.reachability.CanReach(eater.Position, trough, PathEndMode.Touch, TraverseMode.PassDoors))
                             {
-#if DEBUG || DROP_DEBUG
-                                Log.Warning("        Drop: [" + foodSource.Label + "]");
-#endif
-                                try
+                                List<Thing> l = null;
+                                if (eatsHay)
                                 {
-                                    __result = false;
-                                    foreach (Thing t in l)
+                                    __result = trough.TryRemove(ThingDefOf.Hay, hayNeeded, out l);
+    #if DEBUG || DROP_DEBUG
+                                    Log.Warning("        Hay: [" + __result + "] " + ListToString(l));
+    #endif
+                                }
+                                if (!__result && eatsKibble)
+                                {
+                                    __result = trough.TryRemove(ThingDefOf.Kibble, kibbleNeeded, out l);
+    #if DEBUG || DROP_DEBUG
+                                    Log.Warning("        Kibble: [" + __result + "]");
+    #endif
+                                }
+
+                                if (__result && l != null)
+                                {
+    #if DEBUG || DROP_DEBUG
+                                    Log.Warning("        Drop: [" + foodSource.Label + "]");
+    #endif
+                                    try
                                     {
-                                        foodSource = t;
-                                        foodDef = t.def;
-                                        if (BuildingUtil.DropThing(foodSource, foodSource.stackCount, trough, eater.Map, false))
+                                        __result = false;
+                                        foreach (Thing t in l)
                                         {
-                                            __result = true;
+                                            foodSource = t;
+                                            foodDef = t.def;
+                                            if (BuildingUtil.DropThing(foodSource, foodSource.stackCount, trough, eater.Map, false))
+                                            {
+                                                __result = true;
+                                            }
+    #if DEBUG || DROP_DEBUG
+                                            Log.Warning("            foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
+    #endif
                                         }
-#if DEBUG || DROP_DEBUG
-                                        Log.Warning("            foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
-#endif
                                     }
+                                    catch (Exception e)
+                                    {
+    #if DEBUG || DROP_DEBUG
+                                        Log.Warning("            Exception: " + e.Message + "\n" + e.StackTrace);
+    #endif
+                                    }
+                                    break;
                                 }
-                                catch (Exception e)
-                                {
-#if DEBUG || DROP_DEBUG
-                                    Log.Warning("            Exception: " + e.Message + "\n" + e.StackTrace);
-#endif
-                                }
-                                break;
                             }
                         }
                     }
                 }
+    #if DEBUG || DROP_DEBUG
+                Log.Warning("    result: " + __result + " foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
+    #endif
             }
-#if DEBUG || DROP_DEBUG
-            Log.Warning("    result: " + __result + " foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
-#endif
-        }
 
-#if DEBUG || DROP_DEBUG
-        static string ListToString<T>(List<T> l) where T : Thing
-        {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder("[");
-            if (l != null)
+    #if DEBUG || DROP_DEBUG
+            static string ListToString<T>(List<T> l) where T : Thing
             {
-                foreach (T t in l)
+                System.Text.StringBuilder sb = new System.Text.StringBuilder("[");
+                if (l != null)
                 {
-                    if (sb.Length > 1)
-                        sb.Append(", ");
-                    if (t == null)
-                        sb.Append("null");
-                    else
+                    foreach (T t in l)
                     {
-                        sb.Append(t.Label);
+                        if (sb.Length > 1)
+                            sb.Append(", ");
+                        if (t == null)
+                            sb.Append("null");
+                        else
+                        {
+                            sb.Append(t.Label);
+                        }
                     }
+                    sb.Append("]");
                 }
-                sb.Append("]");
+                else
+                    sb.Append("null list");
+                return sb.ToString();
             }
-            else
-                sb.Append("null list");
-            return sb.ToString();
-        }
-#endif
-    }*/
-    #endregion
+    #endif
+        }*/
+        #endregion
 
-    #region Reserve
-    static class ReservationManagerUtil
+        #region Reserve
+        static class ReservationManagerUtil
     {
         private static FieldInfo mapFI = null;
         public static Map GetMap(ReservationManager mgr)
