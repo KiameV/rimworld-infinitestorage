@@ -62,11 +62,14 @@ namespace InfiniteStorage
 
         public static IEnumerable<Building_InfiniteStorage> GetAllInfiniteStorages()
         {
-            foreach (LinkedList<Building_InfiniteStorage> l in ifStorages.Values)
+            if (ifStorages != null)
             {
-                foreach (Building_InfiniteStorage storage in l)
+                foreach (LinkedList<Building_InfiniteStorage> l in ifStorages.Values)
                 {
-                    yield return storage;
+                    foreach (Building_InfiniteStorage storage in l)
+                    {
+                        yield return storage;
+                    }
                 }
             }
         }
