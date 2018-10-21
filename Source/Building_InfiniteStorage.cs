@@ -111,7 +111,7 @@ namespace InfiniteStorage
                             {
                                 continue;
                             }
-                            
+
                             gotten = t;
                             l.Remove(n);
                             this.DropThing(t, false);

@@ -16,14 +16,21 @@ namespace MendingInfiniteStoragePatch
         {
             if (ModsConfig.ActiveModsInLoadOrder.Any(m => "MendAndRecycle".Equals(m.Name)))
             {
-                var harmony = HarmonyInstance.Create("com.MendingInfiniteStoragePatch.rimworld.mod");
+                try
+                {
+                    var harmony = HarmonyInstance.Create("com.MendingInfiniteStoragePatch.rimworld.mod");
 
-                harmony.PatchAll(Assembly.GetExecutingAssembly());
+                    harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-                Log.Message(
-                    "MendingInfiniteStoragePatch Harmony Patches:" + Environment.NewLine +
-                    "  Postfix:" + Environment.NewLine +
-                    "    WorkGiver_DoBill.TryFindBestBillIngredients - Priority Last");
+                    Log.Message(
+                        "MendingInfiniteStoragePatch Harmony Patches:" + Environment.NewLine +
+                        "  Postfix:" + Environment.NewLine +
+                        "    WorkGiver_DoBill.TryFindBestBillIngredients - Priority Last");
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Failed to patch Mending & Recycling." + Environment.NewLine + e.Message);
+                }
             }
             else
             {
@@ -39,9 +46,11 @@ namespace MendingInfiniteStoragePatch
         static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, bool ignoreHitPoints, ref Thing chosen)
         {
             if (__result == false &&
-                pawn != null && bill != null && bill.recipe != null &&
-                bill.Map == pawn.Map &&
-                bill.recipe.defName.IndexOf("Apparel") != -1)
+                pawn != null && 
+                bill != null && 
+                bill.recipe != null &&
+                bill.Map == pawn.Map && 
+                (bill.recipe.defName.StartsWith("Mend") || bill.recipe.defName.StartsWith("Recycle")))
             {
                 IEnumerable<Building_InfiniteStorage> storages = WorldComp.GetInfiniteStorages(bill.Map);
                 if (storages == null)
