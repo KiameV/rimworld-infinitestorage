@@ -72,6 +72,8 @@ namespace InfiniteStorage
         [HarmonyPatch(typeof(HealthCardUtility), "DrawMedOperationsTab")]
         static class Patch_HealthCardUtility_DrawMedOperationsTab
         {
+            private static long lastUpdate = 0;
+            private static IEnumerable<Thing> cache = null;
             [HarmonyPriority(Priority.First)]
             static void Prefix()
             {
@@ -95,7 +97,13 @@ namespace InfiniteStorage
 #if MED_DEBUG
                         Log.Warning("    Storage: " + storage.Label);
 #endif
-                        Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(storage.GetMedicalThings(true, false));
+                        long now = DateTime.Now.Ticks;
+                        if (cache == null || now - lastUpdate > TimeSpan.TicksPerSecond)
+                        {
+                            cache = storage.GetMedicalThings(true, false);
+                        }
+
+                        Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(cache);
                     }
                 }
             }

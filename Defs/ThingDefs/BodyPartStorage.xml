@@ -57,6 +57,7 @@
 				<priority>Preferred</priority>
 				<filter>
 					<categories>
+						<li>Medicine</li>
 						<li>BodyPartsNatural</li>
 						<li>BodyPartsArtificial</li>
 					</categories>

@@ -42,11 +42,13 @@ namespace InfiniteStorage.UI
             InfiniteStorage_Misc,
             InfiniteStorage_Minified,
             InfiniteStorage_Apparel,
-            InfiniteStorage_Weapons
+            InfiniteStorage_Weapons,
+            InfiniteStorage_Chunks
         };
 
         private readonly Building_InfiniteStorage InfiniteStorage;
         private List<Thing> Misc = new List<Thing>();
+        private List<Thing> Chunks = new List<Thing>();
         private List<Thing> Minified = new List<Thing>();
         private List<Thing> Apparel = new List<Thing>();
         private List<Thing> Weapons = new List<Thing>();
@@ -104,7 +106,7 @@ namespace InfiniteStorage.UI
             this.Minified.Clear();
             this.Apparel.Clear();
             this.Weapons.Clear();
-            foreach(Thing t in this.InfiniteStorage.StoredThings)
+            foreach (Thing t in this.InfiniteStorage.StoredThings)
             {
 #if DEBUG
                 StringBuilder sb = new StringBuilder("Thing: " + t.def.label + " [");
@@ -121,7 +123,7 @@ namespace InfiniteStorage.UI
                 {
                     this.Apparel.Add(t);
                 }
-                else if (t.def.thingCategories.Contains(WeaponsMeleeCategoryDef) || 
+                else if (t.def.thingCategories.Contains(WeaponsMeleeCategoryDef) ||
                          t.def.thingCategories.Contains(WeaponsRangedCategoryDef))
                 {
                     this.Weapons.Add(t);
@@ -129,6 +131,10 @@ namespace InfiniteStorage.UI
                 else if (t is MinifiedThing)
                 {
                     this.Minified.Add(t);
+                }
+                else if (this.IsChunk(t.def))
+                {
+                    this.Chunks.Add(t);
                 }
                 else
                 {
@@ -139,7 +145,8 @@ namespace InfiniteStorage.UI
             if ((this.selectedTab == Tabs.InfiniteStorage_Misc && this.Misc.Count == 0) || 
                 (this.selectedTab == Tabs.InfiniteStorage_Minified && this.Minified.Count == 0) || 
                 (this.selectedTab == Tabs.InfiniteStorage_Apparel && this.Apparel.Count == 0) || 
-                (this.selectedTab == Tabs.InfiniteStorage_Weapons && this.Weapons.Count == 0))
+                (this.selectedTab == Tabs.InfiniteStorage_Weapons && this.Weapons.Count == 0) ||
+                (this.selectedTab == Tabs.InfiniteStorage_Chunks && this.Chunks.Count == 0))
             {
                 this.selectedTab = Tabs.Unknown;
             }
@@ -154,13 +161,29 @@ namespace InfiniteStorage.UI
                     this.selectedTab = Tabs.InfiniteStorage_Apparel;
                 else if (this.Weapons.Count > 0)
                     this.selectedTab = Tabs.InfiniteStorage_Weapons;
+                else if (this.Chunks.Count > 0)
+                    this.selectedTab = Tabs.InfiniteStorage_Chunks;
             }
+        }
+
+        private bool IsChunk(ThingDef def)
+        {
+            foreach(ThingCategoryDef d in def.thingCategories)
+            {
+                if (d == ThingCategoryDefOf.Chunks || 
+                    d == ThingCategoryDefOf.StoneChunks)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public override void PreClose()
         {
             base.PreClose();
             this.Misc.Clear();
+            this.Chunks.Clear();
             this.Minified.Clear();
             this.Apparel.Clear();
             this.Weapons.Clear();
@@ -322,6 +345,13 @@ namespace InfiniteStorage.UI
                         delegate { this.selectedTab = Tabs.InfiniteStorage_Weapons; },
                         this.selectedTab == Tabs.InfiniteStorage_Weapons));
                 }
+                if (this.Chunks.Count > 0)
+                {
+                    this.tabs.Add(new TabRecord(
+                        Tabs.InfiniteStorage_Chunks.ToString().Translate(),
+                        delegate { this.selectedTab = Tabs.InfiniteStorage_Chunks; },
+                        this.selectedTab == Tabs.InfiniteStorage_Chunks));
+                }
 
                 if (this.selectedTab == Tabs.InfiniteStorage_Misc)
                 {
@@ -338,10 +368,15 @@ namespace InfiniteStorage.UI
                     thingsToShow = this.Apparel;
                     rows = this.Apparel.Count;
                 }
-                else
+                else if (this.selectedTab == Tabs.InfiniteStorage_Weapons)
                 {
                     thingsToShow = this.Weapons;
                     rows = this.Weapons.Count;
+                }
+                else
+                {
+                    thingsToShow = this.Chunks;
+                    rows = this.Chunks.Count;
                 }
             }
             return thingsToShow;

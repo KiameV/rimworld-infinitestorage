@@ -391,14 +391,16 @@ namespace InfiniteStorage
             if (this.storedThings.TryGetValue(thing.def.ToString(), out l))
             {
                 bool absorbed = false;
-                foreach (Thing t in l)
+                if (thing.def.stackLimit > 1)
                 {
-                    if (t.TryAbsorbStack(thing, false))
+                    foreach (Thing t in l)
                     {
-                        absorbed = true;
+                        if (t.TryAbsorbStack(thing, false))
+                        {
+                            absorbed = true;
+                        }
                     }
                 }
-
                 if (!absorbed)
                 {
                     l.AddLast(thing);
@@ -419,10 +421,22 @@ namespace InfiniteStorage
             return thing.GetStatValue(StatDefOf.Mass, true) * count;
         }
 
+        private static bool IsBodyPart(ThingDef td)
+        {
+            foreach (ThingCategoryDef d in td.thingCategories)
+            {
+                if (d.defName.Contains("BodyPart"))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public IEnumerable<Thing> GetMedicalThings(bool includeBodyParts = true, bool remove = false)
         {
 #if MED_DEBUG
-            Log.Warning("Start GetMedicalThings");
+            Log.Warning("Start GetMedicalThings (includeBodyParts: " + includeBodyParts + ", remove: " + remove + ")");
 #endif
             List<Thing> rv = new List<Thing>();
             foreach (LinkedList<Thing> l in this.storedThings.Values)
@@ -430,8 +444,9 @@ namespace InfiniteStorage
                 if (l.Count > 0)
                 {
                     ThingDef def = l.First.Value.def;
-                    if (def.IsMedicine || 
-                        (includeBodyParts && def.thingCategories.Contains(ThingCategoryDefOf.BodyParts)))
+                    if (def != null && 
+                        def.IsMedicine || 
+                        (includeBodyParts && IsBodyPart(def)))
                     {
 #if MED_DEBUG
                         Log.Message("    " + def.defName + " is medicine");
