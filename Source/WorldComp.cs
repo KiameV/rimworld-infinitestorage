@@ -29,7 +29,7 @@ namespace InfiniteStorage
                 return;
             }
 
-            if (map == null)
+            if (map == null || storage.Map == null)
             {
                 Log.Error("Tried to add " + storage.Label + " to a null map. Please let me know if this ever happens!");
                 return;
@@ -113,7 +113,31 @@ namespace InfiniteStorage
             }
             return false;
         }
-        
+
+        public static void Remove(Map map)
+        {
+            Log.Warning("IS Map to remove: " + map.uniqueID);
+            LinkedList<Building_InfiniteStorage> l;
+            if (ifStorages.TryGetValue(map, out l))
+            {
+                if (l.Count > 0)
+                    Log.Warning("ifStorages map: " + l.First.Value.Map.uniqueID);
+                if (l != null)
+                    l.Clear();
+                Log.Warning("removing ifStorages");
+                ifStorages.Remove(map);
+            }
+            if (ifNonGlobalStorages.TryGetValue(map, out l))
+            {
+                if (l.Count > 0)
+                    Log.Warning("ifNonGlobalStorages map: " + l.First.Value.Map.uniqueID);
+                if (l != null)
+                    l.Clear();
+                Log.Warning("removing ifNonGlobalStorages");
+                ifNonGlobalStorages.Remove(map);
+            }
+        }
+
         public static void Remove(Map map, Building_InfiniteStorage storage)
         {
             if (!storage.IncludeInWorldLookup)

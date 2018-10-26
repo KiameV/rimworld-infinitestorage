@@ -24,6 +24,7 @@ namespace InfiniteStorage
                "  Prefix:" + Environment.NewLine +
                "    Designator_Build.ProcessInput - will block if looking for things." + Environment.NewLine +
                "    ScribeSaver.InitSaving" + Environment.NewLine +
+               "    SettlementAbandonUtility.Abandon" + Environment.NewLine +
                "  Postfix:" + Environment.NewLine +
                "    Pawn_TraderTracker.DrawMedOperationsTab" + Environment.NewLine +
                "    Pawn_TraderTracker.ThingsInGroup" + Environment.NewLine +
@@ -31,6 +32,16 @@ namespace InfiniteStorage
                "    TradeShip.ColonyThingsWillingToBuy" + Environment.NewLine +
                "    Window.PreClose" + Environment.NewLine +
                "    WorkGiver_DoBill.TryFindBestBillIngredients");
+        }
+    }
+
+    [HarmonyPatch(typeof(SettlementAbandonUtility), "Abandon")]
+    static class Patch_SettlementAbandonUtility_Abandon
+    {
+        [HarmonyPriority(Priority.First)]
+        static void Prefix(MapParent settlement)
+        {
+            WorldComp.Remove(settlement.Map);
         }
     }
 
