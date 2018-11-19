@@ -248,7 +248,7 @@ namespace InfiniteStorage
         {
             foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
 			{
-				if (t != this)
+				if (!(t is Building_InfiniteStorage) && t != this && t.def.category == ThingCategory.Item)
 					this.Add(t, true);
             }
         }
