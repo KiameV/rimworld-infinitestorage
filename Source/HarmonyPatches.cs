@@ -199,7 +199,7 @@ namespace InfiniteStorage
     }
     #endregion
 
-    [HarmonyPatch(typeof(ItemAvailability), "ThingsAvailableAnywhere")]
+	[HarmonyPatch(typeof(ItemAvailability), "ThingsAvailableAnywhere")]
     static class Patch_ItemAvailability_ThingsAvailableAnywhere
     {
         private static FieldInfo cachedResultsFI = null;

@@ -247,8 +247,9 @@ namespace InfiniteStorage
         public void ForceReclaim()
         {
             foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
-            {
-                this.Add(t);
+			{
+				if (t != this)
+					this.Add(t, true);
             }
         }
 
@@ -355,32 +356,41 @@ namespace InfiniteStorage
             }
         }
 
-        public bool Add(Thing thing)
+		public new bool Accepts(Thing thing)
+		{
+			if (thing == null ||
+				!base.settings.AllowedToAccept(thing) ||
+				!this.IsOperational)
+			{
+				return false;
+			}
+
+			if (this.UsesPower && Settings.EnableEnergyBuffer)
+			{
+				if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick <
+					Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+        public bool Add(Thing thing, bool force = false)
         {
-            if (thing == null ||
-                !base.settings.AllowedToAccept(thing) ||
-                !this.IsOperational)
-            {
-                return false;
-            }
+			if (!force)
+			{
+				if (!this.Accepts(thing))
+					return false;
 
-            if (this.UsesPower && Settings.EnableEnergyBuffer)
-            {
-                if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick <
-                    Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
-                {
-                    return false;
-                }
-            }
-
-            if (thing.stackCount == 0)
-            {
+				if (thing.stackCount == 0)
+				{
 #if DEBUG
                 Log.Warning("Add " + thing.Label + " has 0 stack count");
 #endif
-                return true;
-            }
-
+					return true;
+				}
+			}
             if (thing.Spawned)
             {
                 thing.DeSpawn();

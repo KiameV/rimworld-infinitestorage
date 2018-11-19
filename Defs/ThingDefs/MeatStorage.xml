@@ -3,6 +3,7 @@
 	<ThingDef ParentName="FurnitureBase">
 		<defName>IS_MeatStorage</defName>
 		<label>meat storage</label>
+		<minifiedDef>MinifiedThing</minifiedDef>
 		<description>A place to store all types of fabrics, leathers, and wool.</description>
 		<thingClass>InfiniteStorage.Building_InfiniteStorage</thingClass>
 		<graphicData>
