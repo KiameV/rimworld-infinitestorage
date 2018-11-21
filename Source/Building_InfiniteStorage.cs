@@ -185,9 +185,9 @@ namespace InfiniteStorage
             BuildingUtil.DropThing(t, this, this.CurrentMap, makeForbidden);
         }
 
-        public void Empty(List<Thing> droppedThings = null)
+        public void Empty(List<Thing> droppedThings = null, bool force = false)
         {
-            if (!this.IsOperational && !Settings.EmptyOnPowerLoss)
+            if (!force && !this.IsOperational && !Settings.EmptyOnPowerLoss)
                 return;
 
             try
@@ -378,11 +378,18 @@ namespace InfiniteStorage
 
         public bool Add(Thing thing, bool force = false)
         {
-			if (!force)
-			{
-				if (!this.Accepts(thing))
-					return false;
-
+            if (force)
+            {
+                if (thing == null ||
+                    !base.settings.AllowedToAccept(thing))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (!this.Accepts(thing))
+                    return false;
 				if (thing.stackCount == 0)
 				{
 #if DEBUG
@@ -866,7 +873,7 @@ namespace InfiniteStorage
             
             if (!this.IsOperational && Settings.EmptyOnPowerLoss && this.storedCount > 0 && Settings.EnergyFactor > 0.00001f)
             {
-                this.Empty();
+                this.Empty(null, true);
             }
         }
 
@@ -894,19 +901,19 @@ namespace InfiniteStorage
             });
             ++key;
 
+            l.Add(new Command_Action
+            {
+                icon = ViewUI.emptyTexture,
+                defaultDesc = "InfiniteStorage.EmptyDesc".Translate(),
+                defaultLabel = "InfiniteStorage.Empty".Translate(),
+                activateSound = SoundDef.Named("Click"),
+                action = delegate { this.Empty(null, true); },
+                groupKey = key
+            });
+            ++key;
+
             if (this.IsOperational)
             {
-                l.Add(new Command_Action
-                {
-                    icon = ViewUI.emptyTexture,
-                    defaultDesc = "InfiniteStorage.EmptyDesc".Translate(),
-                    defaultLabel = "InfiniteStorage.Empty".Translate(),
-                    activateSound = SoundDef.Named("Click"),
-                    action = delegate { this.Empty(); },
-                    groupKey = key
-                });
-                ++key;
-
                 l.Add(new Command_Action
                 {
                     icon = ViewUI.collectTexture,
