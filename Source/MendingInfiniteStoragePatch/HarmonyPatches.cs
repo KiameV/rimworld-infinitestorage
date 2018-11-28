@@ -45,8 +45,7 @@ namespace MendingInfiniteStoragePatch
 	{
 		static void Postfix(ref bool __result, WorkGiver_DoBill __instance, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
 		{
-			if (__instance is MendAndRecycle.WorkGiver_DoBill &&
-				__result == false &&
+			if (__result == false &&
 				pawn != null && 
                 bill != null && 
                 bill.recipe != null &&
