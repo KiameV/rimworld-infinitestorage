@@ -40,13 +40,14 @@ namespace MendingInfiniteStoragePatch
     }
 
     [HarmonyPriority(Priority.Last)]
-    [HarmonyPatch(typeof(MendAndRecycle.WorkGiver_DoBill), "TryFindBestBillIngredients")]
-    static class Patch_WorkGiver_DoBill_TryFindBestBillIngredients
-    {
-        static void Postfix(ref bool __result, Bill bill, Pawn pawn, Thing billGiver, bool ignoreHitPoints, ref Thing chosen)
-        {
-            if (__result == false &&
-                pawn != null && 
+	[HarmonyPatch(typeof(WorkGiver_DoBill), "TryFindBestBillIngredients")]
+	static class Patch_WorkGiver_DoBill_TryFindBestBillIngredients
+	{
+		static void Postfix(ref bool __result, WorkGiver_DoBill __instance, Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
+		{
+			if (__instance is MendAndRecycle.WorkGiver_DoBill &&
+				__result == false &&
+				pawn != null && 
                 bill != null && 
                 bill.recipe != null &&
                 bill.Map == pawn.Map && 
@@ -75,7 +76,7 @@ namespace MendingInfiniteStoragePatch
                             else
                             {
                                 __result = true;
-                                chosen = t;
+                                chosen.Add(new ThingCount(t, 1));
                             }
                             return;
                         }
