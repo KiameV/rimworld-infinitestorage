@@ -11,7 +11,7 @@ using Verse.AI;
 
 namespace InfiniteStorage
 {
-    partial class HarmonyPatches
+    /*partial class HarmonyPatches
     {
         struct StoredThings
         {
@@ -139,7 +139,7 @@ namespace InfiniteStorage
                 ReservedThings.Clear();
                 ReservedThings.AddRange(rt);
             }
-        }*/
+        }* /
 
         [HarmonyPatch(typeof(WorkGiver_DoBill), "TryFindBestBillIngredients")]
         static class Patch_WorkGiver_DoBill_TryFindBestBillIngredients
@@ -158,7 +158,7 @@ namespace InfiniteStorage
                      *  WorkGiver_DoBill.newRelevantThings.Clear();
                      *  WorkGiver_DoBill.processedThings.Clear();
                      *  WorkGiver_DoBill.ingredientsOrdered.Clear();
-                     */
+                     * /
                     if (l[i].opcode == OpCodes.Callvirt)
                     {
                         l[i].opcode = OpCodes.Nop;
@@ -447,5 +447,5 @@ namespace InfiniteStorage
                 chosenAmounts.Clear();
             }
         }
-    }
+    }*/
 }

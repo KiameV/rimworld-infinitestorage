@@ -84,7 +84,7 @@ namespace InfiniteStorage
             return new List<Building_InfiniteStorage>(0);
         }
 
-        public static IEnumerable<Building_InfiniteStorage> GetNonGlobalInfiniteStorages(Map map)
+        /*public static IEnumerable<Building_InfiniteStorage> GetNonGlobalInfiniteStorages(Map map)
         {
             LinkedList<Building_InfiniteStorage> l;
             if (map != null && ifNonGlobalStorages.TryGetValue(map, out l))
@@ -92,9 +92,27 @@ namespace InfiniteStorage
                 return l;
             }
             return new List<Building_InfiniteStorage>(0);
-        }
+		}*/
 
-        public static bool HasInfiniteStorages(Map map)
+		public static IEnumerable<Building_InfiniteStorage> GetInfiniteStoragesWithinRadius(Map map, IntVec3 position, float ingredientSearchRadius)
+		{
+			List<Building_InfiniteStorage> result = new List<Building_InfiniteStorage>();
+			LinkedList<Building_InfiniteStorage> l;
+			if (map != null && ifStorages.TryGetValue(map, out l))
+			{
+				float radiusSquared = ingredientSearchRadius * ingredientSearchRadius;
+				foreach (var s in l)
+				{
+					if ((s.Position - position).LengthHorizontalSquared < radiusSquared)
+					{
+						result.Add(s);
+					}
+				}
+			}
+			return result;
+		}
+
+		public static bool HasInfiniteStorages(Map map)
         {
             LinkedList<Building_InfiniteStorage> l;
             if (map != null && ifStorages.TryGetValue(map, out l))
@@ -162,5 +180,5 @@ namespace InfiniteStorage
                 }
             }
         }
-    }
+	}
 }
