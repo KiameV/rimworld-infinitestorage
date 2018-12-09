@@ -10,7 +10,7 @@ namespace InfiniteStorage
 {
 	public class Building_InfiniteStorage : Building_Storage
 	{
-		private SortedDictionary<string, LinkedList<Thing>> storedThings = new SortedDictionary<string, LinkedList<Thing>>();
+		internal SortedDictionary<string, LinkedList<Thing>> storedThings = new SortedDictionary<string, LinkedList<Thing>>();
 		public IEnumerable<Thing> StoredThings
 		{
 			get
@@ -493,15 +493,18 @@ namespace InfiniteStorage
 			{
 				if (l.Count > 0)
 				{
-					foreach (Thing t in l)
+					if (bill.IsFixedOrAllowedIngredient(l.First.Value.def))
 					{
-						if (bill.IsFixedOrAllowedIngredient(t) && filter.Allows(t))
+						foreach (Thing t in l)
 						{
-							if (gotten == null)
+							if (filter.Allows(t))
 							{
-								gotten = new List<Thing>();
+								if (gotten == null)
+								{
+									gotten = new List<Thing>();
+								}
+								gotten.Add(t);
 							}
-							gotten.Add(t);
 						}
 					}
 				}
@@ -1114,218 +1117,5 @@ namespace InfiniteStorage
             removed = null;*/
 		}
 		#endregion
-
-		struct FoundIng
-		{
-			public Building_InfiniteStorage storage;
-			public Thing Thing;
-			public int Count;
-
-			public FoundIng(Building_InfiniteStorage s, Thing thing, int count)
-			{
-				this.storage = s;
-				this.Thing = thing;
-				this.Count = count;
-			}
-		}
-
-		class IngsNeeded
-		{
-			public ThingFilter filter;
-			public float needed;
-			public List<FoundIng> FoundIngs = new List<FoundIng>();
-			public IngsNeeded(ThingFilter filter, float needed)
-			{
-				Log.Warning("            IngsNeeded " + needed);
-				this.filter = filter;
-				this.needed = needed;
-			}
-
-			internal void AddFoundIng(FoundIng foundIng, float factor)
-			{
-				Log.Warning("            IngsNeeded.AddFoundIng " + foundIng.Thing.def.defName + " " + (foundIng.Count * factor));
-				this.needed -= foundIng.Count * factor;
-				if (needed < 0.0001f)
-					needed = 0f;
-				this.FoundIngs.Add(foundIng);
-			}
-		}
-
-		public static bool TryGetIngredients(Bill bill, Pawn pawn, bool remove, List<ThingCount> chosen)
-		{
-#if BILL_DEBUG
-			Log.Warning("Start TryGetIngredients");
-#endif
-			//Log.Warning("Chosen:");
-			//foreach (var c in chosen)
-			//	Log.Warning("    - " + c.Thing.def.defName + " " + c.Thing.stackCount);
-
-			if (bill.recipe.ingredients == null)
-			{
-#if BILL_DEBUG
-				Log.Warning("No ingredients for bill " + bill.recipe.defName);
-#endif
-				return false;
-			}
-
-#if BILL_DEBUG
-			Log.Warning("    Ings Needed:");
-#endif
-			List<IngsNeeded> toGet = new List<IngsNeeded>(bill.recipe.ingredients.Count);
-			foreach (var ing in bill.recipe.ingredients)
-			{
-				//Log.Message("        Filters:");
-				//	foreach (var v in ing.filter.AllowedThingDefs)
-				//		Log.Message("          - " + v.defName);
-				float needed = ing.GetBaseCount();
-#if BILL_DEBUG
-				Log.Warning("        need ing count: " + needed);
-#endif
-				foreach (var c in chosen)
-				{
-					if (ing.filter.Allows(c.Thing))
-					{
-#if BILL_DEBUG
-						Log.Warning("            From chosen " + c.Thing.def.defName);
-#endif
-						needed -= c.Count * bill.recipe.IngredientValueGetter.ValuePerUnitOf(c.Thing.def);
-#if BILL_DEBUG
-						Log.Warning("            still need " + needed);
-#endif
-					}
-				}
-				if (needed >= 0)
-				{
-#if BILL_DEBUG
-					Log.Warning("        Still need " + needed + " of ing");
-#endif
-					toGet.Add(new IngsNeeded(ing.filter, needed));
-				}
-#if BILL_DEBUG
-				else
-				{
-					Log.Warning("        Chosen has all needed of ing");
-				}
-#endif
-			}
-
-			if (toGet.Count == 0)
-			{
-#if BILL_DEBUG
-				Log.Warning("    Chosen has all ings. Exiting True.");
-#endif
-				return true;
-			}
-
-#if BILL_DEBUG
-			Log.Warning("    Find Ings In Storages");
-#endif
-			var storages = WorldComp.GetInfiniteStoragesWithinRadius(pawn.Map, pawn.Position, bill.ingredientSearchRadius);
-			foreach (var ing in toGet)
-			{
-				foreach (var storage in storages)
-				{
-					if (ing.needed <= 0)
-						break;
-#if BILL_DEBUG
-					Log.Warning("    - Check " + storage.def.defName);
-#endif
-					foreach (LinkedList<Thing> l in storage.storedThings.Values)
-					{
-						if (ing.needed <= 0)
-							break;
-#if BILL_DEBUG
-						Log.Warning("        - Does filter allow def " + ((l == null && l.Count > 0) ? "null false" : l.First.Value.def + " " + ing.filter.Allows(l.First.Value.def)));
-#endif
-						if (l != null && l.Count > 0 && ing.filter.Allows(l.First.Value.def))
-						{
-							foreach (Thing t in l)
-							{
-#if BILL_DEBUG
-								Log.Warning("            " + t.def.defName + " " + t.stackCount);
-#endif
-								if (ing.needed <= 0)
-									break;
-
-								//foreach (var v in ing.filter.AllowedThingDefs)
-								//	Log.Message("              - " + v.defName);
-								if (ing.filter.Allows(t))
-								{
-									var factor = bill.recipe.IngredientValueGetter.ValuePerUnitOf(t.def);
-									float toRemove = ing.needed / factor;
-#if BILL_DEBUG
-									Log.Warning("                toremove: " + toRemove + " = " + ing.needed + " / " + factor);
-#endif
-									if (t.stackCount < ing.needed)
-										toRemove = t.stackCount;
-#if BILL_DEBUG
-									Log.Warning("                going to remove: " + toRemove);
-#endif
-									ing.AddFoundIng(new FoundIng(storage, t, (int)toRemove), factor);
-#if BILL_DEBUG
-									Log.Warning("              Matches! Still need: " + ing.needed);
-#endif
-								}
-#if BILL_DEBUG
-								else
-								{
-									Log.Warning("              Does not match...");
-								}
-#endif
-							}
-						}
-					}
-				}
-			}
-
-#if BILL_DEBUG
-			Log.Warning("    Check Result:");
-#endif
-			foreach (var ing in toGet)
-			{
-				if (ing.needed != 0)
-				{
-#if BILL_DEBUG
-					Log.Warning("        Not all ings found. Exit False.");
-#endif
-					return false;
-				}
-			}
-
-#if BILL_DEBUG
-			Log.Warning("    Spawn all chosen");
-#endif
-			foreach (var ing in toGet)
-			{
-				foreach (var f in ing.FoundIngs)
-				{
-					List<Thing> removed;
-					if (f.storage.TryRemove(f.Thing, f.Count, out removed))
-					{
-						foreach (var v in removed)
-						{
-							BuildingUtil.DropThing(v, f.storage, f.storage.Map, false);
-							chosen.Add(new ThingCount(v, v.stackCount));
-						}
-					}
-#if BILL_DEBUG
-					else
-					{
-						Log.Error("Failed to remove ingredient " + f.Thing.def.defName + " " + f.Count);
-					}
-#endif
-				}
-			}
-
-#if BILL_DEBUG
-			Log.Warning("    Result:");
-			foreach(var v in chosen)
-			{
-				Log.Warning("        Chosen: Thing " + v.Thing.Label + " Count " + v.Count + " --- stack count " + v.Thing.stackCount);
-			}
-			Log.Warning("End TryGetIngredients");
-#endif
-			return true;
-		}
 	}
 }
