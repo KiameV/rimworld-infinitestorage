@@ -299,13 +299,17 @@ namespace InfiniteStorage
 						{
 							foreach (var t in removed)
 							{
-								if (BuildingUtil.DropSingleThing(t, f.storage, f.storage.Map, false))
-									newChosen.Add(new ThingCount(t, t.stackCount));
-								else
+								//Log.Error("Drop meat: " + t.ThingID + " " + t.stackCount + " " + t.Destroyed);
+								if (t.stackCount > 0)
 								{
-									Log.Warning("Failed to spawn item " + t.Label);
-									f.storage.Add(t);
-									return false;
+									if (BuildingUtil.DropSingleThing(t, f.storage, f.storage.Map, false))
+										newChosen.Add(new ThingCount(t, t.stackCount));
+									else
+									{
+										Log.Warning("Failed to spawn item " + t.Label);
+										f.storage.Add(t);
+										return false;
+									}
 								}
 							}
 						}

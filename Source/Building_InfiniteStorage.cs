@@ -708,7 +708,7 @@ namespace InfiniteStorage
 						removed = new List<Thing>();
 					}
 
-					if (t.stackCount == 0)
+					if (t.stackCount == 0 || t.Destroyed)
 					{
 #if DEBUG || DROP_DEBUG
                         Log.Warning("        0 stack count");
@@ -720,6 +720,7 @@ namespace InfiniteStorage
 #if DEBUG || DROP_DEBUG
                         Log.Warning("        need >= t.stackCount");
 #endif
+						//Log.Error("Using meat: " + t.ThingID + " " + t.stackCount + " " + t.Destroyed);
 						need -= t.stackCount;
 						removeCount += t.stackCount;
 						l.Remove(n);
@@ -728,12 +729,19 @@ namespace InfiniteStorage
 					else
 					{
 						removeCount += need;
-						Thing split = t.SplitOff(need);
+						while (need > 0)
+						{
+							int toRemove = Math.Min(need, t.def.stackLimit);
+							//Log.Error("toRemove: " + toRemove + " -- Math.Min " + need + ", " + t.def.stackLimit);
+							need -= toRemove;
+							Thing split = t.SplitOff(toRemove);
+							//Log.Error("Parent meat: " + t.ThingID + " " + t.stackCount + " " + t.Destroyed);
+							//Log.Error("Split meat: " + split.ThingID + " " + split.stackCount + " " + split.Destroyed);
 #if DEBUG || DROP_DEBUG
                         Log.Warning("        else split off to remove - " + split.ToString() + " - " + split.Label);
 #endif
-						removed.Add(split);
-						need = 0;
+							removed.Add(split);
+						}
 					}
 					n = next;
 				}
