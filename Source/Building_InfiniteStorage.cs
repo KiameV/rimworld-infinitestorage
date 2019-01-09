@@ -246,6 +246,9 @@ namespace InfiniteStorage
 
 		public void ForceReclaim()
 		{
+			if (base.Map == null)
+				return;
+
 			foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
 			{
 				if (!(t is Building_InfiniteStorage) && t != this && t.def.category == ThingCategory.Item)

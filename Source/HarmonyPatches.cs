@@ -251,17 +251,31 @@ namespace InfiniteStorage
         }
     }
 
-    [HarmonyPatch(typeof(ScribeSaver), "InitSaving")]
-    static class Patch_ScribeSaver_InitSaving
-    {
-        static void Prefix()
-        {
-            foreach (Building_InfiniteStorage s in WorldComp.GetAllInfiniteStorages())
-            {
-                s.ForceReclaim();
-            }
-        }
-    }
+	[HarmonyPatch(typeof(ScribeSaver), "InitSaving")]
+	static class Patch_ScribeSaver_InitSaving
+	{
+		static void Prefix()
+		{
+			try
+			{
+				foreach (Building_InfiniteStorage s in WorldComp.GetAllInfiniteStorages())
+				{
+					try
+					{
+						s.ForceReclaim();
+					}
+					catch (Exception e)
+					{
+						Log.Warning("Error while reclaiming apparel for infinite storage\n" + e.Message);
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				Log.Warning("Error while reclaiming items\n" + e.Message);
+			}
+		}
+	}
 
         #region Feed Self (for animals)
         /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]

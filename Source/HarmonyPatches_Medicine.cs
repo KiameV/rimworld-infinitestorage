@@ -10,12 +10,74 @@ using Verse.AI;
 
 namespace InfiniteStorage
 {
-    partial class HarmonyPatches
+	partial class HarmonyPatches
     {
-        [HarmonyPatch(typeof(HealthAIUtility), "FindBestMedicine")]
-        static class Patch_HealthAIUtility_FindBestMedicine
-        {
-            /*struct StorageMedicine
+		[HarmonyPatch]
+		static class WorkGiver_Tend_Smart_Medicine_Patch
+		{
+			static MethodBase target;
+
+			static bool Prepare()
+			{
+				var mod = LoadedModManager.RunningMods.FirstOrDefault(m => m.Name == "Smart Medicine");
+				if (mod == null)
+				{
+					return false;
+				}
+
+				var type = mod.assemblies.loadedAssemblies
+							.FirstOrDefault(a => a.GetName().Name == "SmartMedicine")?
+							.GetType("SmartMedicine.FindBestMedicine");
+
+				if (type == null)
+				{
+					Log.Warning("InfiniteStorage can't patch 'Smart Medicine'");
+
+					return false;
+				}
+
+				target = AccessTools.DeclaredMethod(type, "Find");
+				if (target == null)
+				{
+					Log.Warning("InfiniteStorage can't patch 'Smart Medicine' Find");
+
+					return false;
+				}
+
+				return true;
+			}
+
+			static MethodBase TargetMethod()
+			{
+				return target;
+			}
+
+			static void Postfix(ref List<ThingCount>  __result, Pawn healer, Pawn patient, ref int totalCount)
+			{
+				if (healer.Map != patient.Map)
+					return;
+
+				foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStoragesWithinRadius(healer.Map, patient.Position, 20))
+				{
+					IEnumerable<Thing> removed = storage.GetMedicalThings(false, true);
+					foreach (Thing r in removed)
+					{
+						List<Thing> dropped = new List<Thing>();
+						BuildingUtil.DropThing(r, r.stackCount, storage, storage.Map, false, dropped);
+						foreach (Thing t in dropped)
+						{
+							__result.Add(new ThingCount(t, t.stackCount));
+							t.Map.reservationManager.CanReserveStack(healer, t, 1, ReservationLayerDefOf.Floor, true);
+						}
+					}
+				}
+			}
+		}
+
+		[HarmonyPatch(typeof(HealthAIUtility), "FindBestMedicine")]
+		static class Patch_HealthAIUtility_FindBestMedicine
+		{
+			/*struct StorageMedicine
             {
                 public readonly Building_InfiniteStorage Storage;
                 public readonly IEnumerable<Thing> Medicine;
@@ -42,30 +104,29 @@ namespace InfiniteStorage
                 GenClosest.ClosestThing_Global_Reachable(
                     patient.Position, patient.map, searchSet, peMode, traverseParams, 9999f, validator, priorityGetter);
             }*/
-            //private readonly static List<Thing> dropped = new List<Thing>();
+			//private readonly static List<Thing> dropped = new List<Thing>();
 
-            [HarmonyPriority(Priority.First)]
-            static void Prefix(Pawn healer, Pawn patient)
-            {
-                Log.Warning("FindBestMedicine Prefix");
-                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(patient.Map))
-                {
-                    IEnumerable<Thing> removed = storage.GetMedicalThings(false, true);
-                    foreach (Thing r in removed)
-                    {
-                        BuildingUtil.DropThing(r, r.stackCount, storage, storage.Map, false);//, dropped);
-                    }
-                }
-            }
+			[HarmonyPriority(Priority.First)]
+			static void Prefix(Pawn healer, Pawn patient)
+			{
+				foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(patient.Map))
+				{
+					IEnumerable<Thing> removed = storage.GetMedicalThings(false, true);
+					foreach (Thing r in removed)
+					{
+						BuildingUtil.DropThing(r, r.stackCount, storage, storage.Map, false);//, dropped);
+					}
+				}
+			}
 
-            /*static void Postfix(Thing __result)
+			/*static void Postfix(Thing __result)
             {
                 if (__result != null)
                     Log.Message("Tend with: " + __result + " is reserved: " + __result.Map.reservationManager.IsReservedByAnyoneOf(__result, Faction.OfPlayer));
                 else
                     Log.Message("Tend no med");
             }*/
-        }
+		}
 
 
 
