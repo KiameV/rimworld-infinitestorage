@@ -407,8 +407,7 @@ namespace InfiniteStorage
 			}
 
 			int thingsAdded = thing.stackCount;
-			LinkedList<Thing> l;
-			if (this.storedThings.TryGetValue(thing.def.ToString(), out l))
+			if (this.storedThings.TryGetValue(thing.def.ToString(), out LinkedList<Thing> l))
 			{
 				bool absorbed = false;
 				if (thing.def.stackLimit > 1)

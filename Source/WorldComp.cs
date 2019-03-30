@@ -47,8 +47,7 @@ namespace InfiniteStorage
 
         private static void Add(Map map, Building_InfiniteStorage storage, Dictionary<Map, LinkedList<Building_InfiniteStorage>> storages)
         {
-            LinkedList<Building_InfiniteStorage> l;
-            if (!storages.TryGetValue(map, out l))
+            if (!storages.TryGetValue(map, out LinkedList<Building_InfiniteStorage> l))
             {
                 l = new LinkedList<Building_InfiniteStorage>();
                 storages.Add(map, l);
@@ -76,8 +75,7 @@ namespace InfiniteStorage
 
         public static IEnumerable<Building_InfiniteStorage> GetInfiniteStorages(Map map)
         {
-            LinkedList<Building_InfiniteStorage> l;
-            if (map != null && ifStorages.TryGetValue(map, out l))
+            if (map != null && ifStorages.TryGetValue(map, out LinkedList<Building_InfiniteStorage> l))
             {
                 return l;
             }
@@ -97,25 +95,23 @@ namespace InfiniteStorage
 		public static IEnumerable<Building_InfiniteStorage> GetInfiniteStoragesWithinRadius(Map map, IntVec3 position, float ingredientSearchRadius)
 		{
 			List<Building_InfiniteStorage> result = new List<Building_InfiniteStorage>();
-			LinkedList<Building_InfiniteStorage> l;
-			if (map != null && ifStorages.TryGetValue(map, out l))
-			{
-				float radiusSquared = ingredientSearchRadius * ingredientSearchRadius;
-				foreach (var s in l)
-				{
-					if ((s.Position - position).LengthHorizontalSquared < radiusSquared)
-					{
-						result.Add(s);
-					}
-				}
-			}
-			return result;
+            if (map != null && ifStorages.TryGetValue(map, out LinkedList<Building_InfiniteStorage> l))
+            {
+                float radiusSquared = ingredientSearchRadius * ingredientSearchRadius;
+                foreach (var s in l)
+                {
+                    if ((s.Position - position).LengthHorizontalSquared < radiusSquared)
+                    {
+                        result.Add(s);
+                    }
+                }
+            }
+            return result;
 		}
 
 		public static bool HasInfiniteStorages(Map map)
         {
-            LinkedList<Building_InfiniteStorage> l;
-            if (map != null && ifStorages.TryGetValue(map, out l))
+            if (map != null && ifStorages.TryGetValue(map, out LinkedList<Building_InfiniteStorage> l))
             {
                 return l.Count > 0;
             }
@@ -124,8 +120,7 @@ namespace InfiniteStorage
 
         public static bool HasNonGlobalInfiniteStorages(Map map)
         {
-            LinkedList<Building_InfiniteStorage> l;
-            if (map != null && ifNonGlobalStorages.TryGetValue(map, out l))
+            if (map != null && ifNonGlobalStorages.TryGetValue(map, out LinkedList<Building_InfiniteStorage>  l))
             {
                 return l.Count > 0;
             }
@@ -135,8 +130,7 @@ namespace InfiniteStorage
         public static void Remove(Map map)
         {
             Log.Warning("IS Map to remove: " + map.uniqueID);
-            LinkedList<Building_InfiniteStorage> l;
-            if (ifStorages.TryGetValue(map, out l))
+            if (ifStorages.TryGetValue(map, out LinkedList<Building_InfiniteStorage> l))
             {
                 if (l.Count > 0)
                     Log.Warning("ifStorages map: " + l.First.Value.Map.uniqueID);
@@ -170,8 +164,7 @@ namespace InfiniteStorage
 
         private static void Remove(Map map, Building_InfiniteStorage storage, Dictionary<Map, LinkedList<Building_InfiniteStorage>> storages)
         {
-            LinkedList<Building_InfiniteStorage> l;
-            if (map != null && storages.TryGetValue(map, out l))
+            if (map != null && storages.TryGetValue(map, out LinkedList<Building_InfiniteStorage> l))
             {
                 l.Remove(storage);
                 if (l.Count == 0)

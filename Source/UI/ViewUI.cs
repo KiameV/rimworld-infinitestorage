@@ -25,6 +25,20 @@ namespace InfiniteStorage.UI
             applyFiltersTexture = ContentFinder<Texture2D>.Get("InfiniteStorage/filter", true);
         }
 
+        private class MatchedThings : Thing
+        {
+            public List<Thing> Things = new List<Thing>();
+            public int Count = 0;
+            public MatchedThings() { }
+            public MatchedThings(Thing t) { this.Add(t); }
+            public Thing First => Things[0];
+            public void Add(Thing t)
+            {
+                this.Things.Add(t);
+                ++this.Count;
+            }
+        }
+
         public static Texture2D BodyPartViewTexture;
         public static Texture2D TextileViewTexture;
         public static Texture2D InfiniteStorageViewTexture;
@@ -47,8 +61,8 @@ namespace InfiniteStorage.UI
         };
 
         private readonly Building_InfiniteStorage InfiniteStorage;
-        private List<Thing> Misc = new List<Thing>();
-        private List<Thing> Chunks = new List<Thing>();
+        private Dictionary<string, Thing> Misc = new Dictionary<string, Thing>();
+        private Dictionary<string, Thing> Chunks = new Dictionary<string, Thing>();
         private List<Thing> Minified = new List<Thing>();
         private List<Thing> Apparel = new List<Thing>();
         private List<Thing> Weapons = new List<Thing>();
@@ -106,6 +120,7 @@ namespace InfiniteStorage.UI
             this.Minified.Clear();
             this.Apparel.Clear();
             this.Weapons.Clear();
+            this.Chunks.Clear();
             foreach (Thing t in this.InfiniteStorage.StoredThings)
             {
 #if DEBUG
@@ -134,11 +149,11 @@ namespace InfiniteStorage.UI
                 }
                 else if (this.IsChunk(t.def))
                 {
-                    this.Chunks.Add(t);
+                    this.AddSpecial(t, this.Chunks);
                 }
                 else
                 {
-                    this.Misc.Add(t);
+                    this.AddSpecial(t, this.Misc);
                 }
             }
 
@@ -163,6 +178,26 @@ namespace InfiniteStorage.UI
                     this.selectedTab = Tabs.InfiniteStorage_Weapons;
                 else if (this.Chunks.Count > 0)
                     this.selectedTab = Tabs.InfiniteStorage_Chunks;
+            }
+        }
+
+        private void AddSpecial(Thing t, Dictionary<string, Thing> d)
+        {
+            if (t.def.stackLimit == 1)
+            {
+                if (d.TryGetValue(t.def.defName, out Thing mt) &&
+                    mt is MatchedThings)
+                {
+                    (mt as MatchedThings).Add(t);
+                }
+                else
+                {
+                    d.Add(t.def.defName, new MatchedThings(t));
+                }
+            }
+            else
+            {
+                d.Add(t.def.defName, t);
             }
         }
 
@@ -200,8 +235,7 @@ namespace InfiniteStorage.UI
             try
             {
                 int y = 90;
-                int rows;
-                IEnumerable<Thing> thingsToShow = this.GetThingsToShow(out rows);
+                IEnumerable<Thing> thingsToShow = this.GetThingsToShow(out int rows);
 
                 if (rows == 0)
                 {
@@ -221,14 +255,14 @@ namespace InfiniteStorage.UI
                 scrollPosition = GUI.BeginScrollView(
                     new Rect(50, y, r.width + 18, inRect.height - y - 75), scrollPosition, r);
                 int i = 0;
-                foreach (Thing thing in thingsToShow)
+                foreach (Thing t in thingsToShow)
                 {
-                    if (thing != null)
+                    if (t != null)
                     {
-                        string label = this.FormatLabel(thing);
+                        string label = this.FormatLabel(t);
                         if (searchText.Length == 0 || label.ToLower().Contains(searchText))
                         {
-                            if (this.DrawRow(thing, label, y, i, r))
+                            if (this.DrawRow(t, label, y, i, r))
                             {
                                 break;
                             }
@@ -254,13 +288,15 @@ namespace InfiniteStorage.UI
 
         private bool DrawRow(Thing thing, String label, float y, int i, Rect r)
         {
+            Thing t = (thing is MatchedThings) ? (thing as MatchedThings).First : thing;
+
             GUI.BeginGroup(new Rect(0, y + i * (HEIGHT + BUFFER), r.width, HEIGHT));
 
-            Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), thing);
+            Widgets.ThingIcon(new Rect(0f, 0f, HEIGHT, HEIGHT), t);
 
-            if (Widgets.InfoCardButton(40, 0, thing))
+            if (Widgets.InfoCardButton(40, 0, t))
             {
-                Find.WindowStack.Add(new Dialog_InfoCard(thing));
+                Find.WindowStack.Add(new Dialog_InfoCard(t));
             }
 
             Widgets.Label(new Rect(70, 0, r.width - (80 + HEIGHT), HEIGHT), label);
@@ -269,9 +305,9 @@ namespace InfiniteStorage.UI
                 Widgets.ButtonImage(new Rect(r.xMax - 20, 0, 20, 20), DropTexture))
             {
                 this.InfiniteStorage.AllowAdds = false;
-                if (this.InfiniteStorage.TryRemove(thing))
+                if (this.InfiniteStorage.TryRemove(t))
                 {
-                    BuildingUtil.DropThing(thing, thing.stackCount, this.InfiniteStorage, this.InfiniteStorage.Map, false);
+                    BuildingUtil.DropThing(t, t.stackCount, this.InfiniteStorage, this.InfiniteStorage.Map, false);
                     this.itemsDropped = true;
                 }
                 this.PopulateDisplayThings();
@@ -281,8 +317,10 @@ namespace InfiniteStorage.UI
             return false;
         }
 
-        private string FormatLabel(Thing t)
+        private string FormatLabel(Thing thing)
         {
+            Thing t = (thing is MatchedThings) ? (thing as MatchedThings).First : thing;
+            
             if (t is MinifiedThing || 
                 t.def.IsApparel ||
                 t.def.thingCategories.Contains(WeaponsMeleeCategoryDef) ||
@@ -290,7 +328,6 @@ namespace InfiniteStorage.UI
             {
                 return t.Label;
             }
-
             StringBuilder sb = new StringBuilder(t.def.label);
             if (t.Stuff != null)
             {
@@ -298,7 +335,12 @@ namespace InfiniteStorage.UI
                 sb.Append(t.Stuff.LabelAsStuff);
                 sb.Append(")");
             }
-            if (t.stackCount > 0)
+            if (thing is MatchedThings)
+            {
+                sb.Append(" x");
+                sb.Append((thing as MatchedThings).Count);
+            }
+            else if (t.stackCount > 0)
             {
                 sb.Append(" x");
                 sb.Append(t.stackCount);
@@ -355,7 +397,7 @@ namespace InfiniteStorage.UI
 
                 if (this.selectedTab == Tabs.InfiniteStorage_Misc)
                 {
-                    thingsToShow = this.Misc;
+                    thingsToShow = this.Misc.Values;
                     rows = this.Misc.Count;
                 }
                 else if (this.selectedTab == Tabs.InfiniteStorage_Minified)
@@ -375,7 +417,7 @@ namespace InfiniteStorage.UI
                 }
                 else
                 {
-                    thingsToShow = this.Chunks;
+                    thingsToShow = this.Chunks.Values;
                     rows = this.Chunks.Count;
                 }
             }
