@@ -134,7 +134,8 @@ namespace InfiniteStorage
         static class Patch_HealthCardUtility_DrawMedOperationsTab
         {
             private static long lastUpdate = 0;
-            private static IEnumerable<Thing> cache = null;
+            private static List<Thing> cache = new List<Thing>();
+
             [HarmonyPriority(Priority.First)]
             static void Prefix()
             {
@@ -153,19 +154,24 @@ namespace InfiniteStorage
 #if MED_DEBUG
                     Log.Warning("    Map is not null: " + (map != null).ToString());
 #endif
-                    foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
+                    long now = DateTime.Now.Ticks;
+                    if (cache == null || now - lastUpdate > TimeSpan.TicksPerSecond)
                     {
-#if MED_DEBUG
-                        Log.Warning("    Storage: " + storage.Label);
-#endif
-                        long now = DateTime.Now.Ticks;
-                        if (cache == null || now - lastUpdate > TimeSpan.TicksPerSecond)
+                        cache.Clear();
+                        foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
                         {
-                            cache = storage.GetMedicalThings(true, false);
+#if MED_DEBUG
+                            Log.Warning("    Storage: " + storage.Label);
+#endif
+                            if (storage.def.defName.Equals("IS_BodyPartStorage") ||
+                                storage.def.defName.Equals("InfiniteStorage"))
+                            {
+                                cache.AddRange(storage.GetMedicalThings(true, false));
+                            }
                         }
-
-                        Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(cache);
+                        lastUpdate = now;
                     }
+                    Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.AddRange(cache);
                 }
             }
 
@@ -176,6 +182,61 @@ namespace InfiniteStorage
                     Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
                 }
             }
+
+            /*public static IEnumerable<ThingDef> PotentiallyMissingIngredients(Pawn billDoer, Map map)
+            {
+                for (int i = 0; i < this.ingredients.Count; i++)
+                {
+                    IngredientCount ing = this.ingredients[i];
+                    bool foundIng = false;
+                    List<Thing> thingList = map.listerThings.ThingsInGroup(ThingRequestGroup.HaulableEver);
+                    for (int j = 0; j < thingList.Count; j++)
+                    {
+                        Thing thing = thingList[j];
+                        if ((billDoer == null || !thing.IsForbidden(billDoer)) && !thing.Position.Fogged(map) && (ing.IsFixedIngredient || this.fixedIngredientFilter.Allows(thing)) && ing.filter.Allows(thing))
+                        {
+                            foundIng = true;
+                            break;
+                        }
+                    }
+                    if (!foundIng)
+                    {
+                        if (ing.IsFixedIngredient)
+                        {
+                            yield return ing.filter.AllowedThingDefs.First<ThingDef>();
+                        }
+                        else
+                        {
+                            ThingDef def = (from x in ing.filter.AllowedThingDefs
+                                            orderby x.BaseMarketValue
+                                            select x).FirstOrDefault((ThingDef x) => this.$this.fixedIngredientFilter.Allows(x));
+                            if (def != null)
+                            {
+                                yield return def;
+                            }
+                        }
+                    }
+                }
+            }
+
+            public static void AddToCache(Thing t)
+            {
+                if (cache == null)
+                    cache = new Dictionary<string, List<Thing>>();
+                if (thingsCached == null)
+                    thingsCached = new HashSet<int>();
+
+                if (!thingsCached.Contains(t.thingIDNumber))
+                {
+                    if (!cache.TryGetValue(t.def.defName, out List<Thing> l))
+                    {
+                        l = new List<Thing>();
+                        cache.Add(t.def.defName, l);
+                    }
+                    l.Add(t);
+                    thingsCached.Add(t.thingIDNumber);
+                }
+            }*/
         }
 
         [HarmonyPatch(typeof(ListerThings), "ThingsInGroup")]
