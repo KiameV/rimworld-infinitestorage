@@ -63,7 +63,7 @@ namespace InfiniteStorage
 					foreach (Thing r in removed)
 					{
 						List<Thing> dropped = new List<Thing>();
-						BuildingUtil.DropThing(r, r.stackCount, storage, storage.Map, false, dropped);
+						BuildingUtil.DropThing(r, r.stackCount, storage, storage.Map, dropped);
 						foreach (Thing t in dropped)
 						{
 							__result.Add(new ThingCount(t, t.stackCount));
@@ -114,7 +114,7 @@ namespace InfiniteStorage
 					IEnumerable<Thing> removed = storage.GetMedicalThings(false, true);
 					foreach (Thing r in removed)
 					{
-						BuildingUtil.DropThing(r, r.stackCount, storage, storage.Map, false);//, dropped);
+						BuildingUtil.DropThing(r, r.stackCount, storage, storage.Map);//, dropped);
 					}
 				}
 			}

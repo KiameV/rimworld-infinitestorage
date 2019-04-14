@@ -33,49 +33,23 @@ namespace InfiniteStorage
             }
             return list;
         }
-        
-        public static void DropThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = true)
-        {
-#if DEBUG || DROP_DEBUG
-            Log.Warning("DropThing: toDrop.stackCount: " + toDrop.stackCount + " toDrop.def.stackLimit: " + toDrop.def.stackLimit);
-#endif
-            if (toDrop.stackCount <= toDrop.def.stackLimit)
-            {
-                try
-                {
-                    from.AllowAdds = false;
-                    if (toDrop.stackCount != 0)
-                    {
-#if DEBUG || DROP_DEBUG
-                        Log.Warning(" Drop Single Thing no loop");
-#endif
-                        DropSingleThing(toDrop, from, map, makeForbidden);
-                    }
-                }
-                finally
-                {
-                    from.AllowAdds = true;
-                }
-            }
-            else
-            {
-                DropThing(toDrop, toDrop.stackCount, from, map, makeForbidden);
-            }
-        }
 
-        public static void DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, List<ThingCount> droppedThings)
+        public static bool DropThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = false)
         {
+            if (toDrop.stackCount == 0)
+            {
+                Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
+                return false;
+            }
+
             try
             {
                 from.AllowAdds = false;
-
-                List<Thing> d = new List<Thing>();
-                DropThing(toDrop, amountToDrop, from, map, false, d);
-                foreach (Thing dropped in d)
+                if (toDrop.stackCount <= toDrop.def.stackLimit)
                 {
-                    droppedThings.Add(new ThingCount(dropped, dropped.stackCount));
+                    return DropSingleThing(toDrop, from, map, makeForbidden);
                 }
-                d.Clear();
+                return DropThing(toDrop, toDrop.stackCount, from, map, null, makeForbidden);
             }
             finally
             {
@@ -83,11 +57,29 @@ namespace InfiniteStorage
             }
         }
 
-        public static bool DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = true, List<Thing> droppedThings = null)
+        public static bool DropThing(Thing toDrop, IntVec3 from, Map map, bool makeForbidden = false)
         {
-#if DEBUG || DROP_DEBUG
-            Log.Warning("DropThing: toDrop: " + toDrop.Label + " toDrop.stackCount: " + toDrop.stackCount + " amountToDrop: " + amountToDrop + " toDrop.def.stackLimit: " + toDrop.def.stackLimit);
-#endif
+            if (toDrop.stackCount == 0)
+            {
+                Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
+                return false;
+            }
+
+            if (toDrop.stackCount <= toDrop.def.stackLimit)
+            {
+                return DropSingleThing(toDrop, from, map, makeForbidden);
+            }
+            return DropThing(toDrop, toDrop.stackCount, from, map, null, makeForbidden);
+        }
+
+        public static bool DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, List<Thing> droppedThings = null, bool makeForbidden = false)
+        {
+            if (toDrop.stackCount == 0)
+            {
+                Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
+                return false;
+            }
+
             bool anyDropped = false;
             try
             {
@@ -95,11 +87,8 @@ namespace InfiniteStorage
 
                 Thing t;
                 bool done = false;
-                while(!done)
+                while (!done)
                 {
-#if DEBUG || DROP_DEBUG
-                    Log.Warning("    Loop not done toDrop.stackCount: " + toDrop.stackCount);
-#endif
                     int toTake = toDrop.def.stackLimit;
                     if (toTake > amountToDrop)
                     {
@@ -115,9 +104,6 @@ namespace InfiniteStorage
                         toTake = toDrop.stackCount;
                         done = true;
                     }
-#if DEBUG || DROP_DEBUG
-                    Log.Warning("        toTake: " + toTake);
-#endif
                     if (toTake > 0)
                     {
                         amountToDrop -= toTake;
@@ -137,41 +123,95 @@ namespace InfiniteStorage
             {
                 from.AllowAdds = true;
             }
-#if DEBUG || DROP_DEBUG
-            Log.Warning("    Return: " + anyDropped);
-#endif
             return anyDropped;
         }
 
-        public static bool DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden)
+        public static bool DropThing(Thing toDrop, int amountToDrop, IntVec3 from, Map map, List<Thing> droppedThings = null, bool makeForbidden = false)
         {
-#if DEBUG || DROP_DEBUG
-            Log.Warning("DropSingleThing");
-#endif
+            if (toDrop.stackCount == 0)
+            {
+                Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
+                return false;
+            }
+
+            bool anyDropped = false;
+            Thing t;
+            bool done = false;
+            while (!done)
+            {
+                int toTake = toDrop.def.stackLimit;
+                if (toTake > amountToDrop)
+                {
+                    toTake = amountToDrop;
+                    done = true;
+                }
+                if (toTake >= toDrop.stackCount)
+                {
+                    if (amountToDrop > toTake)
+                    {
+                        Log.Error("        ThingStorage: Unable to drop " + (amountToDrop - toTake).ToString() + " of " + toDrop.def.label);
+                    }
+                    toTake = toDrop.stackCount;
+                    done = true;
+                }
+                if (toTake > 0)
+                {
+                    amountToDrop -= toTake;
+                    t = toDrop.SplitOff(toTake);
+                    if (droppedThings != null)
+                    {
+                        droppedThings.Add(t);
+                    }
+                    if (DropSingleThing(t, from, map, makeForbidden))
+                    {
+                        anyDropped = true;
+                    }
+                }
+            }
+            return anyDropped;
+        }
+
+        public static bool DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = false)
+        {
+            if (toDrop.stackCount == 0)
+            {
+                Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
+                return false;
+            }
+
             try
             {
                 from.AllowAdds = false;
-                Thing t;
+                return DropSingleThing(toDrop, from.InteractionCell, map, makeForbidden);
+            }
+            finally
+            {
+                from.AllowAdds = true;
+            }
+        }
+
+        public static bool DropSingleThing(Thing toDrop, IntVec3 from, Map map, bool makeForbidden = false)
+        {
+            if (toDrop.stackCount == 0)
+            {
+                Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
+                return false;
+            }
+
+            try
+            {
                 if (!toDrop.Spawned)
                 {
-                    if (!GenThing.TryDropAndSetForbidden(toDrop, from.InteractionCell, map, ThingPlaceMode.Near, out t, makeForbidden))
+                    GenThing.TryDropAndSetForbidden(toDrop, from, map, ThingPlaceMode.Near, out Thing result, makeForbidden);
+                    if (!toDrop.Spawned &&
+                        !GenPlace.TryPlaceThing(toDrop, from, map, ThingPlaceMode.Near))
                     {
-#if DEBUG || DROP_DEBUG
-                        Log.Warning("    First Drop Attempt failed " + t.Label);
-#endif
-                    }
-                    if (!toDrop.Spawned)
-                    {
-                        if (!GenPlace.TryPlaceThing(toDrop, from.Position, map, ThingPlaceMode.Near))
-                        {
-#if DEBUG || DROP_DEBUG
-                            Log.Warning("    Second Drop Attempt failed " + t.Label);
-#endif
-                        }
+                        Log.Error("Failed to spawn " + toDrop.Label + " x" + toDrop.stackCount);
+                        return false;
                     }
                 }
 
-                toDrop.Position = from.InteractionCell;
+                toDrop.Position = from;
             }
             catch (Exception e)
             {
@@ -180,22 +220,7 @@ namespace InfiniteStorage
                     e.GetType().Name + " " + e.Message + "\n" +
                     e.StackTrace);
             }
-            finally
-            {
-                from.AllowAdds = true;
-            }
-
-            if (toDrop == null)
-            {
-#if DEBUG || DROP_DEBUG
-                Log.Warning("    null toDrop - return false");
-#endif
-                return false;
-            }
-#if DEBUG || DROP_DEBUG
-            Log.Warning("    Return: " + toDrop.Spawned);
-#endif
-            return toDrop.Spawned;
+            return toDrop != null && toDrop.Spawned;
         }
     }
 }

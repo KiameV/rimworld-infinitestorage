@@ -307,7 +307,7 @@ namespace InfiniteStorage.UI
                 this.InfiniteStorage.AllowAdds = false;
                 if (this.InfiniteStorage.TryRemove(t))
                 {
-                    BuildingUtil.DropThing(t, t.stackCount, this.InfiniteStorage, this.InfiniteStorage.Map, false);
+                    BuildingUtil.DropThing(t, t.stackCount, this.InfiniteStorage, this.InfiniteStorage.Map);
                     this.itemsDropped = true;
                 }
                 this.PopulateDisplayThings();

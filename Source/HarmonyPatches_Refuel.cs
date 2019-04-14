@@ -55,7 +55,7 @@ namespace InfiniteStorage
                                 List<Thing> removedThings = new List<Thing>();
                                 foreach (Thing t in removed)
                                 {
-                                    BuildingUtil.DropThing(t, t.def.stackLimit, storage, storage.Map, false, removedThings);
+                                    BuildingUtil.DropThing(t, t.def.stackLimit, storage, storage.Map, removedThings);
                                 }
 
                                 if (removedThings.Count > 0)

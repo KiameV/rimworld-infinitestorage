@@ -48,6 +48,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HarmonyPatches_ImprovedBills.cs" />
     <Compile Include="HarmonyPatches_Refuel.cs" />
     <Compile Include="HarmonyPatches_WealthWatcher.cs" />
     <Compile Include="HarmonyPatches_Medicine.cs" />

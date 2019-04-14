@@ -164,7 +164,7 @@ namespace InfiniteStorage
 				{
 					foreach (Thing t in l)
 					{
-						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false);
+						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap);
 					}
 				}
 				this.storedThings.Clear();
@@ -197,7 +197,7 @@ namespace InfiniteStorage
 				{
 					foreach (Thing t in l)
 					{
-						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false, droppedThings);
+						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, droppedThings);
 					}
 					l.Clear();
 				}
@@ -361,7 +361,8 @@ namespace InfiniteStorage
 
 		public new bool Accepts(Thing thing)
 		{
-			if (thing == null ||
+			if (!this.AllowAdds ||
+                thing == null ||
 				!base.settings.AllowedToAccept(thing) ||
 				!this.IsOperational)
 			{

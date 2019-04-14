@@ -108,7 +108,7 @@ namespace InfiniteStorage
                         Log.Warning("        Ammo fouynd: " + t.Label);
 #endif
                             List<Thing> dropped = new List<Thing>();
-                            BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false, dropped);
+                            BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, dropped);
                         }
                     }
                 }
@@ -236,7 +236,7 @@ namespace InfiniteStorage
                                 {
                                     foreach (Thing t in removed)
                                     {
-                                        BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false);
+                                        BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map);
                                     }
 
                                     __result = true;
@@ -602,38 +602,6 @@ namespace InfiniteStorage
                     {
                         storage.Reclaim();
                     }
-                }
-            }
-        }
-    }
-#endregion
-
-#region Fix Broken Tool
-    [HarmonyPatch(typeof(WorkGiver_FixBrokenDownBuilding), "FindClosestComponent")]
-    static class Patch_WorkGiver_FixBrokenDownBuilding_FindClosestComponent
-    {
-        static void Postfix(Thing __result, Pawn pawn)
-        {
-            bool found = false;
-            if (pawn != null && __result == null)
-            {
-                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
-                {
-                    List<Thing> list;
-                    if (storage.TryRemove(ThingDefOf.ComponentIndustrial, 1, out list))
-                    {
-                        found = true;
-                        foreach (Thing t in list)
-                        {
-                            BuildingUtil.DropThing(t, storage, storage.Map, false);
-                        }
-                    }
-                }
-                if (found)
-                {
-                    __result = GenClosest.ClosestThingReachable(
-                        pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.ComponentIndustrial), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger(), 
-                        TraverseMode.ByPawn, false), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x, 1, -1, null, false), null, 0, -1, false, RegionType.Set_Passable, false);
                 }
             }
         }
