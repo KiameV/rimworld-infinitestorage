@@ -10,7 +10,7 @@ namespace InfiniteStorage
 {
 	public class Building_InfiniteStorage : Building_Storage
 	{
-		internal SortedDictionary<string, LinkedList<Thing>> storedThings = new SortedDictionary<string, LinkedList<Thing>>();
+        /*internal SortedDictionary<string, LinkedList<Thing>> storedThings = new SortedDictionary<string, LinkedList<Thing>>();
 		public IEnumerable<Thing> StoredThings
 		{
 			get
@@ -29,9 +29,13 @@ namespace InfiniteStorage
 					count += l.Count;
 				return count;
 			}
-		}
+		}*/
 
-		public bool AllowAdds { get; set; }
+        internal DB db = new DB();
+
+        bool UpdateStats = false;
+
+        public bool AllowAdds { get; set; }
 
 		private Map CurrentMap { get; set; }
 
@@ -94,34 +98,17 @@ namespace InfiniteStorage
 
 		public bool TryGetFirstFilteredItemForMending(Bill bill, ThingFilter filter, bool remove, out Thing gotten)
 		{
-			gotten = null;
-			foreach (LinkedList<Thing> l in this.storedThings.Values)
+			foreach (IEntry i in this.db.Values)
 			{
-				if (l != null && l.Count > 0)
-				{
-					for (LinkedListNode<Thing> n = l.First; n.Next != null; n = n.Next)
-					{
-						Thing t = n.Value;
-						if (!bill.IsFixedOrAllowedIngredient(t.def) || !filter.Allows(t.def))
-							break;
-
-						if (bill.IsFixedOrAllowedIngredient(t) && filter.Allows(t))
-						{
-							if (t.HitPoints == t.MaxHitPoints)
-							{
-								continue;
-							}
-
-							gotten = t;
-							l.Remove(n);
-							this.DropThing(t, false);
-							return true;
-						}
-					}
-				}
+				if (i.TryRemove(filter, 1, out List<Thing> things))
+                {
+                    gotten = things[0];
+                    return true;
+                }
 			}
-			return gotten != null;
-		}
+            gotten = null;
+            return false;
+        }
 
 		public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
 		{
@@ -160,14 +147,14 @@ namespace InfiniteStorage
 			try
 			{
 				this.AllowAdds = false;
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
+				foreach (LinkedList<Thing> l in this.db.Values)
 				{
 					foreach (Thing t in l)
 					{
-						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false);
+						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap);
 					}
 				}
-				this.storedThings.Clear();
+				this.db.Clear();
 			}
 			catch (Exception e)
 			{
@@ -193,13 +180,12 @@ namespace InfiniteStorage
 			try
 			{
 				this.AllowAdds = false;
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
+				foreach (var i in this.db.Values)
 				{
-					foreach (Thing t in l)
+                    foreach (Thing t in i.RemoveAll())
 					{
-						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, false, droppedThings);
+						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, droppedThings);
 					}
-					l.Clear();
 				}
 				this.storedCount = 0;
 				this.storedWeight = 0;
@@ -272,27 +258,8 @@ namespace InfiniteStorage
 		public int StoredThingCount(ThingDef expectedDef, ThingFilter ingrediantFilter)
 		{
 			int count = 0;
-			LinkedList<Thing> l;
-			if (this.storedThings.TryGetValue(expectedDef.ToString(), out l))
-			{
-				foreach (Thing t in l)
-				{
-					if (this.Allows(t, expectedDef, ingrediantFilter))
-					{
-						count += t.stackCount;
-					}
-				}
-			}
-#if DEBUG || DEBUG_DO_UNTIL_X
-            else
-            {
-                Log.Warning("Building_InfiniteStorage.StoredThingCount Def of [" + expectedDef.label + "] Not Found. Stored Defs:");
-                foreach (string label in this.storedThings.Keys)
-                {
-                    Log.Warning("    Def: " + label);
-                }
-            }
-#endif
+            foreach (var i in this.db.Values)
+                count += i.Count;
 			return count;
 		}
 
@@ -401,37 +368,10 @@ namespace InfiniteStorage
 					return true;
 				}
 			}
-			if (thing.Spawned)
-			{
-				thing.DeSpawn();
-			}
-
-			int thingsAdded = thing.stackCount;
-			if (this.storedThings.TryGetValue(thing.def.ToString(), out LinkedList<Thing> l))
-			{
-				bool absorbed = false;
-				if (thing.def.stackLimit > 1)
-				{
-					foreach (Thing t in l)
-					{
-						if (t.TryAbsorbStack(thing, false))
-						{
-							absorbed = true;
-						}
-					}
-				}
-				if (!absorbed)
-				{
-					l.AddLast(thing);
-				}
-			}
-			else
-			{
-				l = new LinkedList<Thing>();
-				l.AddFirst(thing);
-				this.storedThings.Add(thing.def.ToString(), l);
-			}
-			this.UpdateStoredStats(thing, thingsAdded, true);
+            if (this.db.Add(thing))
+            {
+                this.UpdateStats = true;
+            }
 			return true;
 		}
 
@@ -761,30 +701,6 @@ namespace InfiniteStorage
 			return false;
 		}
 
-		private void UpdateStoredStats(Thing thing, int count, bool isAdding, bool force = false)
-		{
-			float weight = this.GetThingWeight(thing, count);
-			if (!isAdding)
-			{
-				weight *= -1;
-				count *= -1;
-			}
-			this.storedCount += count;
-			this.storedWeight += weight;
-			if (this.storedWeight < 0)
-			{
-				this.storedCount = 0;
-				this.storedWeight = 0;
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
-				{
-					foreach (Thing t in l)
-					{
-						this.UpdateStoredStats(thing, count, true, true);
-					}
-				}
-			}
-		}
-
 		/*ublic new float MarketValue
         {
             get
@@ -832,41 +748,18 @@ namespace InfiniteStorage
 		{
 			base.ExposeData();
 
-			if (Scribe.mode == LoadSaveMode.Saving)
-			{
-				this.temp = new List<Thing>();
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
-				{
-					foreach (Thing t in l)
-					{
-						this.temp.Add(t);
-					}
-				}
-			}
+            if (Scribe.mode != LoadSaveMode.Saving)
+            {
+                Scribe_Collections.Look(ref this.temp, "storedThings", LookMode.Deep, new object[0]);
+            }
 
-			Scribe_Collections.Look(ref this.temp, "storedThings", LookMode.Deep, new object[0]);
 			Scribe_Values.Look<bool>(ref this.includeInTradeDeals, "includeInTradeDeals", true, false);
 
-			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs)
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && 
+                this.temp != null)
 			{
-				this.storedThings.Clear();
-
-				if (this.temp != null)
-				{
-					foreach (Thing t in this.temp)
-					{
-						if (!this.Add(t))
-						{
-							if (this.ToDumpOnSpawn == null)
-							{
-								this.ToDumpOnSpawn = new List<Thing>();
-							}
-							this.ToDumpOnSpawn.Add(t);
-						}
-					}
-				}
-				this.temp.Clear();
-				this.temp = null;
+                foreach (Thing t in this.temp)
+                    this.db.Add(t);
 			}
 		}
 
@@ -926,74 +819,91 @@ namespace InfiniteStorage
 			{
 				this.Empty(null, true);
 			}
-		}
 
-		#region Gizmos
-		public override IEnumerable<Gizmo> GetGizmos()
-		{
-			IEnumerable<Gizmo> enumerables = base.GetGizmos();
+            if (this.UpdateStats)
+            {
+                UpdateStoredStats();
+            }
+        }
 
-			List<Gizmo> l;
-			if (enumerables != null)
-				l = new List<Gizmo>(enumerables);
-			else
-				l = new List<Gizmo>(1);
+        private void UpdateStoredStats()
+        {
+            this.storedCount = 0;
+            this.storedWeight = 0;
+            foreach (var i in this.db.Values)
+            {
+                this.stackCount += i.Count;
+                this.storedWeight += i.Weight;
+            }
+            this.UpdateStats = false;
+        }
 
-			int key = "InfiniteStorage".GetHashCode();
+        #region Gizmos
+        public override IEnumerable<Gizmo> GetGizmos()
+        {
+            IEnumerable<Gizmo> enumerables = base.GetGizmos();
 
-			l.Add(new Command_Action
-			{
-				icon = GetGizmoViewTexture(),
-				defaultDesc = "InfiniteStorage.ViewDesc".Translate(),
-				defaultLabel = "InfiniteStorage.View".Translate(),
-				activateSound = SoundDef.Named("Click"),
-				action = delegate { Find.WindowStack.Add(new UI.ViewUI(this)); },
-				groupKey = key
-			});
-			++key;
+            List<Gizmo> l;
+            if (enumerables != null)
+                l = new List<Gizmo>(enumerables);
+            else
+                l = new List<Gizmo>(1);
 
-			l.Add(new Command_Action
-			{
-				icon = ViewUI.emptyTexture,
-				defaultDesc = "InfiniteStorage.EmptyDesc".Translate(),
-				defaultLabel = "InfiniteStorage.Empty".Translate(),
-				activateSound = SoundDef.Named("Click"),
-				action = delegate { this.Empty(null, true); },
-				groupKey = key
-			});
-			++key;
+            int key = "InfiniteStorage".GetHashCode();
 
-			if (this.IsOperational)
-			{
-				l.Add(new Command_Action
-				{
-					icon = ViewUI.collectTexture,
-					defaultDesc = "InfiniteStorage.CollectDesc".Translate(),
-					defaultLabel = "InfiniteStorage.Collect".Translate(),
-					activateSound = SoundDef.Named("Click"),
-					action = delegate
-					{
-						this.CanAutoCollect = true;
-						this.Reclaim();
-					},
-					groupKey = key
-				});
-				++key;
-			}
+            l.Add(new Command_Action
+            {
+                icon = GetGizmoViewTexture(),
+                defaultDesc = "InfiniteStorage.ViewDesc".Translate(),
+                defaultLabel = "InfiniteStorage.View".Translate(),
+                activateSound = SoundDef.Named("Click"),
+                action = delegate { Find.WindowStack.Add(new UI.ViewUI(this)); },
+                groupKey = key
+            });
+            ++key;
 
-			if (this.IncludeInWorldLookup)
-			{
-				l.Add(new Command_Action
-				{
-					icon = (this.includeInTradeDeals) ? ViewUI.yesSellTexture : ViewUI.noSellTexture,
-					defaultDesc = "InfiniteStorage.IncludeInTradeDealsDesc".Translate(),
-					defaultLabel = "InfiniteStorage.IncludeInTradeDeals".Translate(),
-					activateSound = SoundDef.Named("Click"),
-					action = delegate { this.includeInTradeDeals = !this.includeInTradeDeals; },
-					groupKey = key
-				});
-				++key;
-			}
+            l.Add(new Command_Action
+            {
+                icon = ViewUI.emptyTexture,
+                defaultDesc = "InfiniteStorage.EmptyDesc".Translate(),
+                defaultLabel = "InfiniteStorage.Empty".Translate(),
+                activateSound = SoundDef.Named("Click"),
+                action = delegate { this.Empty(null, true); },
+                groupKey = key
+            });
+            ++key;
+
+            if (this.IsOperational)
+            {
+                l.Add(new Command_Action
+                {
+                    icon = ViewUI.collectTexture,
+                    defaultDesc = "InfiniteStorage.CollectDesc".Translate(),
+                    defaultLabel = "InfiniteStorage.Collect".Translate(),
+                    activateSound = SoundDef.Named("Click"),
+                    action = delegate
+                    {
+                        this.CanAutoCollect = true;
+                        this.Reclaim();
+                    },
+                    groupKey = key
+                });
+                ++key;
+            }
+
+            if (this.IncludeInWorldLookup)
+            {
+                l.Add(new Command_Action
+                {
+                    icon = (this.includeInTradeDeals) ? ViewUI.yesSellTexture : ViewUI.noSellTexture,
+                    defaultDesc = "InfiniteStorage.IncludeInTradeDealsDesc".Translate(),
+                    defaultLabel = "InfiniteStorage.IncludeInTradeDeals".Translate(),
+                    activateSound = SoundDef.Named("Click"),
+                    action = delegate { this.includeInTradeDeals = !this.includeInTradeDeals; },
+                    groupKey = key
+                });
+                ++key;
+            }
 
 			l.Add(new Command_Action
 			{
@@ -1006,10 +916,10 @@ namespace InfiniteStorage
 			});
 			++key;
 
-			if (this.includeInWorldLookup)
-			{
-				return SaveStorageSettingsUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
-			}
+            if (this.includeInWorldLookup)
+            {
+                return SaveStorageSettingsUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
+            }
 			return l;
 		}
 
@@ -1079,52 +989,6 @@ namespace InfiniteStorage
 		{
 			this.Empty();
 			this.Reclaim();
-			/*List<Thing> removed = new List<Thing>();
-            List<string> keysToRemove = new List<string>();
-            foreach (KeyValuePair<string, LinkedList<Thing>> kv in this.storedThings)
-            {
-                LinkedList<Thing> l = kv.Value;
-                if (l.Count > 0)
-                {
-                    LinkedListNode<Thing> n = l.First;
-                    while (n != null)
-                    {
-                        var next = n.Next;
-                        if (!this.settings.AllowedToAccept(n.Value))
-                        {
-                            removed.Add(n.Value);
-                            l.Remove(n);
-                        }
-                        n = next;
-                    }
-                }
-                if (l.Count == 0)
-                {
-                    keysToRemove.Add(kv.Key);
-                }
-            }
-            
-            foreach (string key in keysToRemove)
-            {
-                LinkedList<Thing> l;
-                if (this.storedThings.TryGetValue(key, out l))
-                {
-                    foreach(Thing t in l)
-                    {
-                        this.UpdateStoredStats(t, -1 * t.stackCount);
-                    }
-                }
-                this.storedThings.Remove(key);
-            }
-            keysToRemove.Clear();
-            keysToRemove = null;
-
-            foreach (Thing t in removed)
-            {
-                BuildingUtil.DropThing(t, this, this.CurrentMap, false);
-            }
-            removed.Clear();
-            removed = null;*/
 		}
 		#endregion
 	}

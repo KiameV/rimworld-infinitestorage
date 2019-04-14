@@ -61,20 +61,19 @@ namespace InfiniteStorage
 
             foreach (Building_InfiniteStorage ts in WorldComp.GetInfiniteStorages(Find.CurrentMap))
             {
-                foreach (Thing thing in ts.StoredThings)
+                foreach (var i in ts.db.Values)
                 {
-                    if (thing.def.EverStorable(true) && thing.def.CountAsResource && !thing.IsNotFresh())
+                    if (i.ThingDef.EverStorable(true) && i.ThingDef.CountAsResource)
                     {
-                        int count;
-                        if (countedAmounts.TryGetValue(thing.def, out count))
+                        if (countedAmounts.TryGetValue(i.ThingDef, out int count))
                         {
-                            count += thing.stackCount;
+                            count += i.Count;
                         }
                         else
                         {
-                            count = thing.stackCount;
+                            count = i.Count;
                         }
-                        countedAmounts[thing.def] = count;
+                        countedAmounts[i.ThingDef] = count;
                     }
                 }
             }
@@ -108,7 +107,7 @@ namespace InfiniteStorage
                         Log.Warning("        Ammo fouynd: " + t.Label);
 #endif
                             List<Thing> dropped = new List<Thing>();
-                            BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false, dropped);
+                            BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, dropped);
                         }
                     }
                 }
@@ -163,19 +162,18 @@ namespace InfiniteStorage
             {
                 if (storage.Spawned)
                 {
-                    foreach (Thing t in storage.StoredThings)
+                    foreach (var i in storage.db.Values)
                     {
-                        ThingDef current = t.def;
-                        if (current.IsStuff &&
-                            current.stuffProps.CanMake(thingDef) &&
-                            (DebugSettings.godMode || t.stackCount > 0))
+                        if (i.ThingDef.IsStuff &&
+                            i.ThingDef.stuffProps.CanMake(thingDef) &&
+                            (DebugSettings.godMode || i.Count > 0))
                         {
-                            string labelCap = current.LabelCap;
+                            string labelCap = i.ThingDef.LabelCap;
                             list.Add(new FloatMenuOption(labelCap, delegate
                             {
                                 __instance.ProcessInput(ev);
                                 Find.DesignatorManager.Select(__instance);
-                                stuffDefFI.SetValue(__instance, current);
+                                stuffDefFI.SetValue(__instance, i.ThingDef);
                                 writeStuffFI.SetValue(__instance, true);
                             }, MenuOptionPriority.Default, null, null, 0f, null, null));
                         }
@@ -236,7 +234,7 @@ namespace InfiniteStorage
                                 {
                                     foreach (Thing t in removed)
                                     {
-                                        BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map, false);
+                                        BuildingUtil.DropThing(t, t.stackCount, storage, storage.Map);
                                     }
 
                                     __result = true;
@@ -608,7 +606,7 @@ namespace InfiniteStorage
     }
 #endregion
 
-#region Fix Broken Tool
+/*#region Fix Broken Tool
     [HarmonyPatch(typeof(WorkGiver_FixBrokenDownBuilding), "FindClosestComponent")]
     static class Patch_WorkGiver_FixBrokenDownBuilding_FindClosestComponent
     {
@@ -638,7 +636,7 @@ namespace InfiniteStorage
             }
         }
     }
-#endregion
+#endregion*/
 
 #region Handle "Do until X" for stored weapons
     [HarmonyPatch(typeof(RecipeWorkerCounter), "CountProducts")]

@@ -230,7 +230,17 @@ namespace InfiniteStorage
 #if BILL_DEBUG
 					//Log.Warning("        need ing count: " + needed);
 #endif
-					foreach (LinkedList<Thing> l in s.storedThings.Values)
+                    foreach (var entry in s.db.Values)
+                    {
+                        int foundCount = entry.ThingCount(ing.filter);
+
+                        newRelevantThings.Add(t);
+                        int count = (int)(ing.GetBaseCount() / bill.recipe.IngredientValueGetter.ValuePerUnitOf(t.def));
+                        if (count > t.stackCount)
+                            count = t.stackCount;
+                        foundIngs[t.thingIDNumber] = new FoundIng(s, t, count);
+                    
+                    /*foreach (LinkedList<Thing> l in s.storedThings.Values)
 					{
 						if (l != null && l.Count > 0 && ing.filter.Allows(l.First.Value.def))
 						{
@@ -246,8 +256,8 @@ namespace InfiniteStorage
 								}
 							}
 						}
-					}
-				}
+					}*/
+                }
 			}
 			newRelevantThings.Sort(comparison);
 			relevantThings.AddRange(newRelevantThings);
