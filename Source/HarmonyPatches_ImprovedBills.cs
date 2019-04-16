@@ -11,7 +11,7 @@ using Verse.AI;
 
 namespace InfiniteStorage
 {
-    class StoredDef : Thing
+    /*class StoredDef : Thing
     {
         public readonly Building_InfiniteStorage Storage;
         public readonly ThingDef Def;
@@ -60,9 +60,9 @@ namespace InfiniteStorage
 
                         if (things.Count == 1)
                         {
-                            if (BuildingUtil.DropSingleThing(things[0], pos, pawn.Map))
+                            if (BuildingUtil.DropSingleThing(things[0], pos, pawn.Map, out Thing result))
                             {
-                                newJob.targetB = things[0];
+                                newJob.targetB = result;
                                 newJob.count = sd.Count;
                             }
                             else
@@ -158,7 +158,7 @@ namespace InfiniteStorage
         }
     }
 
-    /*
+    
     [HarmonyPriority(Priority.First)]
     [HarmonyPatch(typeof(WorkGiver_DoBill), "TryFindBestBillIngredients")]
     static class Patch_WorkGiver_DoBill_TryFindBestBillIngredients

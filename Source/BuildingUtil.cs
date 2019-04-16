@@ -34,7 +34,7 @@ namespace InfiniteStorage
             return list;
         }
 
-        public static bool DropThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = false)
+        /*public static bool DropThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = false)
         {
             if (toDrop.stackCount == 0)
             {
@@ -57,7 +57,7 @@ namespace InfiniteStorage
             }
         }
 
-        public static bool DropThing(Thing toDrop, IntVec3 from, Map map, bool makeForbidden = false)
+        public static bool DropThing(Thing toDrop, IntVec3 from, Map map)
         {
             if (toDrop.stackCount == 0)
             {
@@ -67,12 +67,12 @@ namespace InfiniteStorage
 
             if (toDrop.stackCount <= toDrop.def.stackLimit)
             {
-                return DropSingleThing(toDrop, from, map, makeForbidden);
+                return DropSingleThing(toDrop, from, map, out Thing result);
             }
-            return DropThing(toDrop, toDrop.stackCount, from, map, null, makeForbidden);
-        }
+            return DropThing(toDrop, toDrop.stackCount, from, map, null, out Thing result);
+        }*/
 
-        public static bool DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, List<Thing> droppedThings = null, bool makeForbidden = false)
+        public static bool DropThing(Thing toDrop, int amountToDrop, Building_InfiniteStorage from, Map map, List<Thing> droppedThings = null)
         {
             if (toDrop.stackCount == 0)
             {
@@ -108,12 +108,12 @@ namespace InfiniteStorage
                     {
                         amountToDrop -= toTake;
                         t = toDrop.SplitOff(toTake);
-                        if (droppedThings != null)
+                        if (DropSingleThing(t, from, map, out Thing result))
                         {
-                            droppedThings.Add(t);
-                        }
-                        if (DropSingleThing(t, from, map, makeForbidden))
-                        {
+                            if (droppedThings != null)
+                            {
+                                droppedThings.Add(result);
+                            }
                             anyDropped = true;
                         }
                     }
@@ -126,7 +126,7 @@ namespace InfiniteStorage
             return anyDropped;
         }
 
-        public static bool DropThing(Thing toDrop, int amountToDrop, IntVec3 from, Map map, List<Thing> droppedThings = null, bool makeForbidden = false)
+        public static bool DropThing(Thing toDrop, int amountToDrop, IntVec3 from, Map map, List<Thing> droppedThings = null)
         {
             if (toDrop.stackCount == 0)
             {
@@ -158,12 +158,12 @@ namespace InfiniteStorage
                 {
                     amountToDrop -= toTake;
                     t = toDrop.SplitOff(toTake);
-                    if (droppedThings != null)
+                    if (DropSingleThing(t, from, map, out Thing result))
                     {
-                        droppedThings.Add(t);
-                    }
-                    if (DropSingleThing(t, from, map, makeForbidden))
-                    {
+                        if (droppedThings != null)
+                        {
+                            droppedThings.Add(result);
+                        }
                         anyDropped = true;
                     }
                 }
@@ -171,8 +171,9 @@ namespace InfiniteStorage
             return anyDropped;
         }
 
-        public static bool DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, bool makeForbidden = false)
+        public static bool DropSingleThing(Thing toDrop, Building_InfiniteStorage from, Map map, out Thing result)
         {
+            result = null;
             if (toDrop.stackCount == 0)
             {
                 Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
@@ -182,7 +183,7 @@ namespace InfiniteStorage
             try
             {
                 from.AllowAdds = false;
-                return DropSingleThing(toDrop, from.InteractionCell, map, makeForbidden);
+                return DropSingleThing(toDrop, from.InteractionCell, map, out result);
             }
             finally
             {
@@ -190,8 +191,9 @@ namespace InfiniteStorage
             }
         }
 
-        public static bool DropSingleThing(Thing toDrop, IntVec3 from, Map map, bool makeForbidden = false)
+        public static bool DropSingleThing(Thing toDrop, IntVec3 from, Map map, out Thing result)
         {
+            result = null;
             if (toDrop.stackCount == 0)
             {
                 Log.Warning("To Drop Thing " + toDrop.Label + " had stack count of 0");
@@ -202,12 +204,19 @@ namespace InfiniteStorage
             {
                 if (!toDrop.Spawned)
                 {
-                    GenThing.TryDropAndSetForbidden(toDrop, from, map, ThingPlaceMode.Near, out Thing result, makeForbidden);
-                    if (!toDrop.Spawned &&
-                        !GenPlace.TryPlaceThing(toDrop, from, map, ThingPlaceMode.Near))
+                    GenThing.TryDropAndSetForbidden(toDrop, from, map, ThingPlaceMode.Near, out result, false);
+                    if (!result.Spawned)
                     {
-                        Log.Error("Failed to spawn " + toDrop.Label + " x" + toDrop.stackCount);
-                        return false;
+                        if (GenPlace.TryPlaceThing(toDrop, from, map, ThingPlaceMode.Near))
+                        {
+                            result = toDrop;
+                        }
+                        else
+                        {
+                            result = null;
+                            Log.Error("Failed to spawn " + toDrop.Label + " x" + toDrop.stackCount);
+                            return false;
+                        }
                     }
                 }
 
@@ -220,7 +229,7 @@ namespace InfiniteStorage
                     e.GetType().Name + " " + e.Message + "\n" +
                     e.StackTrace);
             }
-            return toDrop != null && toDrop.Spawned;
+            return result != null && result.Spawned;
         }
     }
 }

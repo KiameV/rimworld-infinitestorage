@@ -85,7 +85,7 @@ namespace InfiniteStorage
 			{
 				foreach (Thing t in this.ToDumpOnSpawn)
 				{
-					BuildingUtil.DropThing(t, this, this.Map, false);
+					BuildingUtil.DropThing(t, t.stackCount, this, this.Map);
 				}
 				this.ToDumpOnSpawn.Clear();
 				this.ToDumpOnSpawn = null;
@@ -111,10 +111,9 @@ namespace InfiniteStorage
 							{
 								continue;
 							}
-
-							gotten = t;
+                            
 							l.Remove(n);
-							this.DropThing(t, false);
+							BuildingUtil.DropSingleThing(t, this, this.Map, out gotten);
 							return true;
 						}
 					}
@@ -180,9 +179,9 @@ namespace InfiniteStorage
 			WorldComp.Remove(this.CurrentMap, this);
 		}
 
-		private void DropThing(Thing t, bool makeForbidden = true)
+		private void DropThing(Thing t, List<Thing> result)
 		{
-			BuildingUtil.DropThing(t, this, this.CurrentMap, makeForbidden);
+			BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, result);
 		}
 
 		public void Empty(List<Thing> droppedThings = null, bool force = false)
@@ -351,11 +350,11 @@ namespace InfiniteStorage
 		{
 			if (!this.AllowAdds)
 			{
-				BuildingUtil.DropSingleThing(newItem, this, this.Map, false);
+				BuildingUtil.DropSingleThing(newItem, this, this.Map, out Thing result);
 			}
 			else if (!this.Add(newItem))
 			{
-				this.DropThing(newItem, false);
+				this.DropThing(newItem, null);
 			}
 		}
 
@@ -601,7 +600,7 @@ namespace InfiniteStorage
 			return false;
 		}
 
-		public bool DropMeatThings(Bill bill)
+		/*public bool DropMeatThings(Bill bill)
 		{
 			const int NEEDED = 75;
 			LinkedList<Thing> l;
@@ -627,7 +626,7 @@ namespace InfiniteStorage
 								//UpdateStoredStats(n.Value, n.Value.stackCount, false);
 								this.stackCount -= n.Value.stackCount;
 								needed -= n.Value.stackCount;
-								this.DropThing(n.Value, false);
+                                BuildingUtil.DropSingleThing
 								l.Remove(n);
 							}
 							n = next;
@@ -661,8 +660,8 @@ namespace InfiniteStorage
                 this.storedThings.Remove(s);
             }
 
-            return toDrop.Count > 0;*/
-		}
+            return toDrop.Count > 0;* /
+		}*/
 
 		public bool TryRemove(ThingDef def, out IEnumerable<Thing> removed)
 		{

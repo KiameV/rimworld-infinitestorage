@@ -115,7 +115,7 @@ namespace InfiniteStorage
             }
         }
     }
-#endregion
+    #endregion
 
     #region Used for creating other buildings
     [HarmonyPatch(typeof(Designator_Build), "ProcessInput")]
@@ -199,7 +199,7 @@ namespace InfiniteStorage
     }
     #endregion
 
-	[HarmonyPatch(typeof(ItemAvailability), "ThingsAvailableAnywhere")]
+    [HarmonyPatch(typeof(ItemAvailability), "ThingsAvailableAnywhere")]
     static class Patch_ItemAvailability_ThingsAvailableAnywhere
     {
         private static FieldInfo cachedResultsFI = null;
@@ -251,153 +251,153 @@ namespace InfiniteStorage
         }
     }
 
-	[HarmonyPatch(typeof(ScribeSaver), "InitSaving")]
-	static class Patch_ScribeSaver_InitSaving
-	{
-		static void Prefix()
-		{
-			try
-			{
-				foreach (Building_InfiniteStorage s in WorldComp.GetAllInfiniteStorages())
-				{
-					try
-					{
-						s.ForceReclaim();
-					}
-					catch (Exception e)
-					{
-						Log.Warning("Error while reclaiming apparel for infinite storage\n" + e.Message);
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				Log.Warning("Error while reclaiming items\n" + e.Message);
-			}
-		}
-	}
-
-        #region Feed Self (for animals)
-        /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]
-        static class Patch_FoodUtility_TryFindBestFoodSourceFor
+    [HarmonyPatch(typeof(ScribeSaver), "InitSaving")]
+    static class Patch_ScribeSaver_InitSaving
+    {
+        static void Prefix()
         {
-            static void Postfix(
-                bool __result, Pawn getter, Pawn eater, bool desperate, ref Thing foodSource, ref ThingDef foodDef,
-                bool canRefillDispenser, bool canUseInventory, bool allowForbidden,
-                bool allowCorpse, bool allowSociallyImproper, bool allowHarvest)
+            try
             {
-                if (eater == null || eater.needs == null || eater.needs.food == null || eater.Map == null)
-                    return;
-
-                RaceProperties race = eater.def.race;
-    #if DEBUG || DROP_DEBUG
-                Log.Warning("Patch_FoodUtility_TryFindBestFoodSourceFor.Postfix eater: [" + eater.Label + "] IsAnimal: [" + race.Animal + "] Faction: [" + eater.Faction + "] hasTrough: [" + WorldComp.HasNonGlobalInfiniteStorages(eater.Map) + "]");
-    #endif
-                if (!__result &&
-                    race.Animal &&
-                    eater.needs.food.CurCategory >= HungerCategory.Hungry &&
-                    eater.Faction == Faction.OfPlayer &&
-                    WorldComp.HasNonGlobalInfiniteStorages(eater.Map))
+                foreach (Building_InfiniteStorage s in WorldComp.GetAllInfiniteStorages())
                 {
-                    bool eatsHay = race.Eats(FoodTypeFlags.Plant);
-                    bool eatsKibble = race.Eats(FoodTypeFlags.Kibble);
-                    int hayNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Hay);
-                    int kibbleNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Kibble);
-    #if DEBUG || DROP_DEBUG
-                    Log.Warning("    eatsHay: [" + eatsHay + "] eatsKibble: [" + eatsKibble + "] hayNeeded: [" + hayNeeded + "] kibbleNeeded: [" + kibbleNeeded + "]");
-    #endif
-                    if (eatsHay || eatsKibble)
+                    try
                     {
-                        foreach (Building_InfiniteStorage trough in WorldComp.GetNonGlobalInfiniteStorages(eater.Map))
-                        {
-    #if DEBUG || DROP_DEBUG
-                            Log.Warning("    Trough: [" + trough.Label + "]");
-    #endif
-                            if (eater.Map.reachability.CanReach(eater.Position, trough, PathEndMode.Touch, TraverseMode.PassDoors))
-                            {
-                                List<Thing> l = null;
-                                if (eatsHay)
-                                {
-                                    __result = trough.TryRemove(ThingDefOf.Hay, hayNeeded, out l);
-    #if DEBUG || DROP_DEBUG
-                                    Log.Warning("        Hay: [" + __result + "] " + ListToString(l));
-    #endif
-                                }
-                                if (!__result && eatsKibble)
-                                {
-                                    __result = trough.TryRemove(ThingDefOf.Kibble, kibbleNeeded, out l);
-    #if DEBUG || DROP_DEBUG
-                                    Log.Warning("        Kibble: [" + __result + "]");
-    #endif
-                                }
+                        s.ForceReclaim();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Warning("Error while reclaiming apparel for infinite storage\n" + e.Message);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning("Error while reclaiming items\n" + e.Message);
+            }
+        }
+    }
 
-                                if (__result && l != null)
+    #region Feed Self (for animals)
+    /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]
+    static class Patch_FoodUtility_TryFindBestFoodSourceFor
+    {
+        static void Postfix(
+            bool __result, Pawn getter, Pawn eater, bool desperate, ref Thing foodSource, ref ThingDef foodDef,
+            bool canRefillDispenser, bool canUseInventory, bool allowForbidden,
+            bool allowCorpse, bool allowSociallyImproper, bool allowHarvest)
+        {
+            if (eater == null || eater.needs == null || eater.needs.food == null || eater.Map == null)
+                return;
+
+            RaceProperties race = eater.def.race;
+#if DEBUG || DROP_DEBUG
+            Log.Warning("Patch_FoodUtility_TryFindBestFoodSourceFor.Postfix eater: [" + eater.Label + "] IsAnimal: [" + race.Animal + "] Faction: [" + eater.Faction + "] hasTrough: [" + WorldComp.HasNonGlobalInfiniteStorages(eater.Map) + "]");
+#endif
+            if (!__result &&
+                race.Animal &&
+                eater.needs.food.CurCategory >= HungerCategory.Hungry &&
+                eater.Faction == Faction.OfPlayer &&
+                WorldComp.HasNonGlobalInfiniteStorages(eater.Map))
+            {
+                bool eatsHay = race.Eats(FoodTypeFlags.Plant);
+                bool eatsKibble = race.Eats(FoodTypeFlags.Kibble);
+                int hayNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Hay);
+                int kibbleNeeded = FoodUtility.WillIngestStackCountOf(eater, ThingDefOf.Kibble);
+#if DEBUG || DROP_DEBUG
+                Log.Warning("    eatsHay: [" + eatsHay + "] eatsKibble: [" + eatsKibble + "] hayNeeded: [" + hayNeeded + "] kibbleNeeded: [" + kibbleNeeded + "]");
+#endif
+                if (eatsHay || eatsKibble)
+                {
+                    foreach (Building_InfiniteStorage trough in WorldComp.GetNonGlobalInfiniteStorages(eater.Map))
+                    {
+#if DEBUG || DROP_DEBUG
+                        Log.Warning("    Trough: [" + trough.Label + "]");
+#endif
+                        if (eater.Map.reachability.CanReach(eater.Position, trough, PathEndMode.Touch, TraverseMode.PassDoors))
+                        {
+                            List<Thing> l = null;
+                            if (eatsHay)
+                            {
+                                __result = trough.TryRemove(ThingDefOf.Hay, hayNeeded, out l);
+#if DEBUG || DROP_DEBUG
+                                Log.Warning("        Hay: [" + __result + "] " + ListToString(l));
+#endif
+                            }
+                            if (!__result && eatsKibble)
+                            {
+                                __result = trough.TryRemove(ThingDefOf.Kibble, kibbleNeeded, out l);
+#if DEBUG || DROP_DEBUG
+                                Log.Warning("        Kibble: [" + __result + "]");
+#endif
+                            }
+
+                            if (__result && l != null)
+                            {
+#if DEBUG || DROP_DEBUG
+                                Log.Warning("        Drop: [" + foodSource.Label + "]");
+#endif
+                                try
                                 {
-    #if DEBUG || DROP_DEBUG
-                                    Log.Warning("        Drop: [" + foodSource.Label + "]");
-    #endif
-                                    try
+                                    __result = false;
+                                    foreach (Thing t in l)
                                     {
-                                        __result = false;
-                                        foreach (Thing t in l)
+                                        foodSource = t;
+                                        foodDef = t.def;
+                                        if (BuildingUtil.DropThing(foodSource, foodSource.stackCount, trough, eater.Map, false))
                                         {
-                                            foodSource = t;
-                                            foodDef = t.def;
-                                            if (BuildingUtil.DropThing(foodSource, foodSource.stackCount, trough, eater.Map, false))
-                                            {
-                                                __result = true;
-                                            }
-    #if DEBUG || DROP_DEBUG
-                                            Log.Warning("            foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
-    #endif
+                                            __result = true;
                                         }
+#if DEBUG || DROP_DEBUG
+                                        Log.Warning("            foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
+#endif
                                     }
-                                    catch (Exception e)
-                                    {
-    #if DEBUG || DROP_DEBUG
-                                        Log.Warning("            Exception: " + e.Message + "\n" + e.StackTrace);
-    #endif
-                                    }
-                                    break;
                                 }
+                                catch (Exception e)
+                                {
+#if DEBUG || DROP_DEBUG
+                                    Log.Warning("            Exception: " + e.Message + "\n" + e.StackTrace);
+#endif
+                                }
+                                break;
                             }
                         }
                     }
                 }
-    #if DEBUG || DROP_DEBUG
-                Log.Warning("    result: " + __result + " foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
-    #endif
             }
+#if DEBUG || DROP_DEBUG
+            Log.Warning("    result: " + __result + " foodSource: [" + foodSource.Label + "] foodDef: [" + foodDef.label + "]");
+#endif
+        }
 
-    #if DEBUG || DROP_DEBUG
-            static string ListToString<T>(List<T> l) where T : Thing
+#if DEBUG || DROP_DEBUG
+        static string ListToString<T>(List<T> l) where T : Thing
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder("[");
+            if (l != null)
             {
-                System.Text.StringBuilder sb = new System.Text.StringBuilder("[");
-                if (l != null)
+                foreach (T t in l)
                 {
-                    foreach (T t in l)
+                    if (sb.Length > 1)
+                        sb.Append(", ");
+                    if (t == null)
+                        sb.Append("null");
+                    else
                     {
-                        if (sb.Length > 1)
-                            sb.Append(", ");
-                        if (t == null)
-                            sb.Append("null");
-                        else
-                        {
-                            sb.Append(t.Label);
-                        }
+                        sb.Append(t.Label);
                     }
-                    sb.Append("]");
                 }
-                else
-                    sb.Append("null list");
-                return sb.ToString();
+                sb.Append("]");
             }
-    #endif
-        }*/
-        #endregion
+            else
+                sb.Append("null list");
+            return sb.ToString();
+        }
+#endif
+    }*/
+    #endregion
 
-        #region Reserve
-        static class ReservationManagerUtil
+    #region Reserve
+    static class ReservationManagerUtil
     {
         private static FieldInfo mapFI = null;
         public static Map GetMap(ReservationManager mgr)
@@ -472,9 +472,9 @@ namespace InfiniteStorage
             return true;
         }
     }
-#endregion
+    #endregion
 
-#region Trades
+    #region Trades
     static class TradeUtil
     {
         public static IEnumerable<Thing> EmptyStorages(Map map)
@@ -551,9 +551,9 @@ namespace InfiniteStorage
             TradeUtil.ReclaimThings();
         }
     }
-#endregion
+    #endregion
 
-#region Caravan Forming
+    #region Caravan Forming
     [HarmonyPatch(typeof(Dialog_FormCaravan), "PostOpen")]
     static class Patch_Dialog_FormCaravan_PostOpen
     {
@@ -606,9 +606,9 @@ namespace InfiniteStorage
             }
         }
     }
-#endregion
+    #endregion
 
-#region Handle "Do until X" for stored weapons
+    #region Handle "Do until X" for stored weapons
     [HarmonyPatch(typeof(RecipeWorkerCounter), "CountProducts")]
     static class Patch_RecipeWorkerCounter_CountProducts
     {
@@ -628,5 +628,36 @@ namespace InfiniteStorage
             }
         }
     }
-#endregion
+    #endregion
+
+    #region Fix Broken Tool
+    [HarmonyPatch(typeof(WorkGiver_FixBrokenDownBuilding), "FindClosestComponent")]
+    static class Patch_WorkGiver_FixBrokenDownBuilding_FindClosestComponent
+    {
+        static void Postfix(Thing __result, Pawn pawn)
+        {
+            bool found = false;
+            if (pawn != null && __result == null)
+            {
+                foreach (Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(pawn.Map))
+                {
+                    if (storage.TryRemove(ThingDefOf.ComponentIndustrial, 1, out List<Thing>  list))
+                    {
+                        found = true;
+                        foreach (Thing t in list)
+                        {
+                            BuildingUtil.DropThing(t, 1, storage, storage.Map, null);
+                        }
+                    }
+                }
+                if (found)
+                {
+                    __result = GenClosest.ClosestThingReachable(
+                        pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.ComponentIndustrial), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger(),
+                        TraverseMode.ByPawn, false), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x, 1, -1, null, false), null, 0, -1, false, RegionType.Set_Passable, false);
+                }
+            }
+        }
+    }
+    #endregion
 }

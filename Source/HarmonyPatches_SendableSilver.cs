@@ -14,12 +14,11 @@ namespace InfiniteStorage
             {
                 foreach(Building_InfiniteStorage storage in WorldComp.GetInfiniteStorages(map))
                 {
-                    IEnumerable<Thing> silver;
-                    if (storage.TryRemove(ThingDefOf.Silver, out silver))
+                    if (storage.TryRemove(ThingDefOf.Silver, out IEnumerable<Thing> silver))
                     {
-                        foreach(Thing s in silver)
+                        foreach (Thing s in silver)
                         {
-                            BuildingUtil.DropThing(s, storage, storage.Map, false);
+                            BuildingUtil.DropThing(s, s.stackCount, storage, storage.Map, null);
                         }
                     }
                 }

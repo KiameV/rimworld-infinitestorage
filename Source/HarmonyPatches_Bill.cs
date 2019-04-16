@@ -294,31 +294,30 @@ namespace InfiniteStorage
 				{
 					if (f.storage != null)
 					{
-						List<Thing> removed;
-						if (f.storage.TryRemove(f.Thing, tc.Count, out removed))
-						{
-							foreach (var t in removed)
-							{
-								//Log.Error("Drop meat: " + t.ThingID + " " + t.stackCount + " " + t.Destroyed);
-								if (t.stackCount > 0)
-								{
-									if (BuildingUtil.DropSingleThing(t, f.storage, f.storage.Map, false))
-										newChosen.Add(new ThingCount(t, t.stackCount));
-									else
-									{
-										Log.Warning("Failed to spawn item " + t.Label);
-										f.storage.Add(t);
-										return false;
-									}
-								}
-							}
-						}
-						else
-						{
-							Log.Warning("Failed to remove " + f.Thing.Label);
-							return false;
-						}
-					}
+                        if (f.storage.TryRemove(f.Thing, tc.Count, out List<Thing> removed))
+                        {
+                            foreach (var t in removed)
+                            {
+                                //Log.Error("Drop meat: " + t.ThingID + " " + t.stackCount + " " + t.Destroyed);
+                                if (t.stackCount > 0)
+                                {
+                                    if (BuildingUtil.DropSingleThing(t, f.storage, f.storage.Map, out Thing result))
+                                        newChosen.Add(new ThingCount(result, result.stackCount));
+                                    else
+                                    {
+                                        Log.Warning("Failed to spawn item " + t.Label);
+                                        f.storage.Add(t);
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Log.Warning("Failed to remove " + f.Thing.Label);
+                            return false;
+                        }
+                    }
 				}
 				else
 					newChosen.Add(tc);
