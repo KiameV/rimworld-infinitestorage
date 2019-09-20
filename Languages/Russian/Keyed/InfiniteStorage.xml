@@ -1,11 +1,41 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
 	<InfiniteStorage.StoragePriority>Приоритет</InfiniteStorage.StoragePriority>
-
-	<InfiniteStorage.Empty>Заполнить</InfiniteStorage.Empty>
-	<InfiniteStorage.EmptyDesc>Выложить всю текстиль из ящика на пол.</InfiniteStorage.EmptyDesc>
+	<InfiniteStorage.Count>Итого внутри</InfiniteStorage.Count>
+	<InfiniteStorage.StoredWeight>Вес хранимых предметов</InfiniteStorage.StoredWeight>
+	
+	<InfiniteStorage.Empty>Опустошить</InfiniteStorage.Empty>
+	<InfiniteStorage.EmptyDesc>Выложить все хранимые предметы на пол.</InfiniteStorage.EmptyDesc>
 	<InfiniteStorage.Collect>Собрать</InfiniteStorage.Collect>
-	<InfiniteStorage.CollectDesc>Собрать текстиль склада в ящик.</InfiniteStorage.CollectDesc>
-	<InfiniteStorage.IncludeInTradeDeals>Продать текстиль</InfiniteStorage.IncludeInTradeDeals>
-	<InfiniteStorage.IncludeInTradeDealsDesc>Вклоючать ли хранимые такстили в торговые сделки?</InfiniteStorage.IncludeInTradeDealsDesc>
+	<InfiniteStorage.CollectDesc>Собрать предметы вокруг хранилища и поместить их внутрь.</InfiniteStorage.CollectDesc>
+	<InfiniteStorage.IncludeInTradeDeals>Продавать хранимые предметы</InfiniteStorage.IncludeInTradeDeals>
+	<InfiniteStorage.IncludeInTradeDealsDesc>Обозначить возможность продажи хранимых предметов.</InfiniteStorage.IncludeInTradeDealsDesc>
+	<InfiniteStorage.ApplyFilters>Применить фильтры</InfiniteStorage.ApplyFilters>
+	<InfiniteStorage.ApplyFiltersDesc>Отфильтровать хранимые предметы.</InfiniteStorage.ApplyFiltersDesc>
+	
+	<InfiniteStorage.View>Посмотреть хранилище</InfiniteStorage.View>
+	<InfiniteStorage.ViewDesc>Возможность посмотреть список всех предметов в хранилище.</InfiniteStorage.ViewDesc>
+	
+	<!-- 'View' Dialog Window -->
+	<InfiniteStorage.Search>Поиск</InfiniteStorage.Search>
+	<InfiniteStorage_Misc>Разное</InfiniteStorage_Misc>
+	<InfiniteStorage_Minified>Минимизировать</InfiniteStorage_Minified>
+	<InfiniteStorage_Apparel>Одежда и броня</InfiniteStorage_Apparel>
+	<InfiniteStorage_Weapons>Оружие</InfiniteStorage_Weapons>
+	<InfiniteStorage_Chunks>Обломки</InfiniteStorage_Chunks>
+	
+	<!-- Settings Page -->
+	<InfiniteStorage>Infinite Storage</InfiniteStorage>
+	<InfiniteStorage.EnergyFactor>Фактор энергии</InfiniteStorage.EnergyFactor>
+	<InfiniteStorage.EnergyFactorDesc>Как работает фактор энергии: (необходимая энергия) = (фактор энергии) * (хранимый вес предметов)</InfiniteStorage.EnergyFactorDesc>
+	<InfiniteStorage.EnergyFactorSet>Фактор энергии выставлен на {v}.</InfiniteStorage.EnergyFactorSet>
+	<InfiniteStorage.CollectThingsAutomatically>Собирать предметы автоматически</InfiniteStorage.CollectThingsAutomatically>
+	<InfiniteStorage.TimeBetweenAutoCollects>Время между автосбором в секундах</InfiniteStorage.TimeBetweenAutoCollects>
+	<InfiniteStorage.TimeBetweenAutoCollectsSet>Время между автосбором выставленно на {v}.</InfiniteStorage.TimeBetweenAutoCollectsSet>
+	<InfiniteStorage.NumberGreaterThanZero>Должно быть число больше чем 0.</InfiniteStorage.NumberGreaterThanZero>
+	<InfiniteStorage.EnableEnergyBuffer>Включить буфер энергии</InfiniteStorage.EnableEnergyBuffer>
+	<InfiniteStorage.EnergyBuffer>Буфер энергии (W)</InfiniteStorage.EnergyBuffer>
+	<InfiniteStorage.EnergyBufferSet>Буфер энергии выставлен на {v}</InfiniteStorage.EnergyBufferSet>
+	<InfiniteStorage.EnergyBufferDesc>"Бесконечное хранилище" прекратит добавлять предметы в хранилища, если доступная для колонии энергия будет ниже выставленного значения.</InfiniteStorage.EnergyBufferDesc>
+	<InfiniteStorage.EmptyOnPowerLoss>Опустошить при потере энергии</InfiniteStorage.EmptyOnPowerLoss>
 </LanguageData>
