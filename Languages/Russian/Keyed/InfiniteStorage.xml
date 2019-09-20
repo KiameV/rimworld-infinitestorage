@@ -36,6 +36,6 @@
 	<InfiniteStorage.EnableEnergyBuffer>Включить буфер энергии</InfiniteStorage.EnableEnergyBuffer>
 	<InfiniteStorage.EnergyBuffer>Буфер энергии (W)</InfiniteStorage.EnergyBuffer>
 	<InfiniteStorage.EnergyBufferSet>Буфер энергии выставлен на {v}</InfiniteStorage.EnergyBufferSet>
-	<InfiniteStorage.EnergyBufferDesc>"Бесконечное хранилище" прекратит добавлять предметы в хранилища, если доступная для колонии энергия будет ниже выставленного значения.</InfiniteStorage.EnergyBufferDesc>
+	<InfiniteStorage.EnergyBufferDesc>Бесконечное хранилище прекратит добавлять предметы в хранилища, если доступная для колонии энергия будет ниже выставленного значения.</InfiniteStorage.EnergyBufferDesc>
 	<InfiniteStorage.EmptyOnPowerLoss>Опустошить при потере энергии</InfiniteStorage.EmptyOnPowerLoss>
 </LanguageData>
