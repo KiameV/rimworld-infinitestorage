@@ -31,7 +31,7 @@
 	<InfiniteStorage.EnergyFactorSet>Фактор энергии выставлен на {v}.</InfiniteStorage.EnergyFactorSet>
 	<InfiniteStorage.CollectThingsAutomatically>Собирать предметы автоматически</InfiniteStorage.CollectThingsAutomatically>
 	<InfiniteStorage.TimeBetweenAutoCollects>Время между автосбором в секундах</InfiniteStorage.TimeBetweenAutoCollects>
-	<InfiniteStorage.TimeBetweenAutoCollectsSet>Время между автосбором выставленно на {v}.</InfiniteStorage.TimeBetweenAutoCollectsSet>
+	<InfiniteStorage.TimeBetweenAutoCollectsSet>Время между автосбором выставлено на {v}.</InfiniteStorage.TimeBetweenAutoCollectsSet>
 	<InfiniteStorage.NumberGreaterThanZero>Должно быть число больше чем 0.</InfiniteStorage.NumberGreaterThanZero>
 	<InfiniteStorage.EnableEnergyBuffer>Включить буфер энергии</InfiniteStorage.EnableEnergyBuffer>
 	<InfiniteStorage.EnergyBuffer>Буфер энергии (W)</InfiniteStorage.EnergyBuffer>
