@@ -1,11 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
-	<name>[KV] Infinite Storage - 1.0</name>
+	<name>[KV] Infinite Storage - 1.1</name>
 	<author>Kiame Vivacity</author>
 	<url>https://ludeon.com/forums/index.php?topic=37698.msg385779</url>
-	<supportedVersions>
-		<li>1.0</li>
-	</supportedVersions>
+    <supportedVersions>
+        <li>1.0</li>
+        <li>1.1</li>
+    </supportedVersions>
+	<packageId>infinitestorage.kv.rw</packageId>
 	<description>
 Got energy?
 Need storage space?

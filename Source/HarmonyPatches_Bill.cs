@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -135,6 +135,10 @@ namespace InfiniteStorage
 			}
 		}
 
+		private static readonly MethodInfo getBillGiverRootCellMI = typeof(WorkGiver_DoBill).GetMethod("GetBillGiverRootCell", BindingFlags.Static | BindingFlags.NonPublic);
+		private static readonly MethodInfo makeIngredientsListInProcessingOrderMI = typeof(WorkGiver_DoBill).GetMethod("MakeIngredientsListInProcessingOrder", BindingFlags.Static | BindingFlags.NonPublic);
+		private static readonly MethodInfo tryFindBestBillIngredientsInSetMI = typeof(WorkGiver_DoBill).GetMethod("TryFindBestBillIngredientsInSet", BindingFlags.Static | BindingFlags.NonPublic);
+
 		// RimWorld.WorkGiver_DoBill
 		public static bool TryFindBestBillIngredients(Bill bill, Pawn pawn, Thing billGiver, List<ThingCount> chosen)
 		{
@@ -146,13 +150,13 @@ namespace InfiniteStorage
 			{
 				return true;
 			}
-			IntVec3 rootCell = (IntVec3)typeof(WorkGiver_DoBill).GetMethod("GetBillGiverRootCell", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { billGiver, pawn });
+			IntVec3 rootCell = (IntVec3)getBillGiverRootCellMI.Invoke(null, new object[] { billGiver, pawn });
 			Region rootReg = rootCell.GetRegion(pawn.Map, RegionType.Set_Passable);
 			if (rootReg == null)
 			{
 				return false;
 			}
-			typeof(WorkGiver_DoBill).GetMethod("MakeIngredientsListInProcessingOrder", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { ingredientsOrdered, bill });
+			makeIngredientsListInProcessingOrderMI.Invoke(null, new object[] { ingredientsOrdered, bill });
 			relevantThings.Clear();
 			processedThings.Clear();
 			bool foundAll = false;
@@ -161,7 +165,7 @@ namespace InfiniteStorage
 			if (billGiverIsPawn)
 			{
 				AddEveryMedicineToRelevantThings(pawn, billGiver, relevantThings, baseValidator, pawn.Map, bill);
-				if ((bool)typeof(WorkGiver_DoBill).GetMethod("TryFindBestBillIngredientsInSet", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { relevantThings, bill, chosen }))
+				if ((bool)tryFindBestBillIngredientsInSetMI.Invoke(null, new object[] { relevantThings, bill, chosen, rootCell, false }))
 				{
 					DropChosen(chosen);
 
@@ -214,7 +218,7 @@ namespace InfiniteStorage
 					newRelevantThings.Sort(comparison);
 					relevantThings.AddRange(newRelevantThings);
 					newRelevantThings.Clear();
-					if ((bool)typeof(WorkGiver_DoBill).GetMethod("TryFindBestBillIngredientsInSet", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { relevantThings, bill, chosen }))
+					if ((bool)tryFindBestBillIngredientsInSetMI.Invoke(null, new object[] { relevantThings, bill, chosen, rootCell, false }))
 					{
 						foundAll = true;
 						return true;
@@ -252,7 +256,7 @@ namespace InfiniteStorage
 			newRelevantThings.Sort(comparison);
 			relevantThings.AddRange(newRelevantThings);
 			newRelevantThings.Clear();
-			if ((bool)typeof(WorkGiver_DoBill).GetMethod("TryFindBestBillIngredientsInSet", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { relevantThings, bill, chosen }))
+			if ((bool)tryFindBestBillIngredientsInSetMI.Invoke(null, new object[] { relevantThings, bill, chosen, rootCell, false }))
 			{
 				foundAll = true;
 			}

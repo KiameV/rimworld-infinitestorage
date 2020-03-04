@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
 using System;
@@ -16,7 +16,7 @@ namespace InfiniteStorage
     {
         static HarmonyPatches()
         {
-            var harmony = HarmonyInstance.Create("com.InfiniteStorage.rimworld.mod");
+            var harmony = new Harmony("com.InfiniteStorage.rimworld.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             Log.Message(

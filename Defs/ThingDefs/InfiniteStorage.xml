@@ -59,6 +59,7 @@
 						<li>AllowRotten</li>
 					</specialFiltersToDisallow>
 					<categories>
+						<li>FoodRaw</li>
 						<li>Manufactured</li>
 						<li>ResourcesRaw</li>
 						<li>Items</li>

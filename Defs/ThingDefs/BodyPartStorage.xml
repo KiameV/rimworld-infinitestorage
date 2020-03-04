@@ -47,8 +47,7 @@
 				<filter>
 					<categories>
 						<li>Medicine</li>
-						<li>BodyPartsNatural</li>
-						<li>BodyPartsArtificial</li>
+						<li>BodyParts</li>
 					</categories>
 					<thingDefs />
 				</filter>
@@ -58,8 +57,7 @@
 				<filter>
 					<categories>
 						<li>Medicine</li>
-						<li>BodyPartsNatural</li>
-						<li>BodyPartsArtificial</li>
+						<li>BodyParts</li>
 					</categories>
 				</filter>
 			</defaultStorageSettings>
