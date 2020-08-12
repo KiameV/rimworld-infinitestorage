@@ -1,5 +1,6 @@
 ﻿using InfiniteStorage.UI;
 using RimWorld;
+using SaveStorageSettingsUtil;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -1008,7 +1009,7 @@ namespace InfiniteStorage
 
 			if (this.includeInWorldLookup)
 			{
-				return SaveStorageSettingsUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
+				return SaveStorageSettingsGizmoUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
 			}
 			return l;
 		}
