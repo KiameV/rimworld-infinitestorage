@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+	<InfiniteStorage.StoragePriority>Priorität</InfiniteStorage.StoragePriority>
+	<InfiniteStorage.Count>Anzahl</InfiniteStorage.Count>
+	<InfiniteStorage.StoredWeight>Gelagertes Gewicht</InfiniteStorage.StoredWeight>
+	
+	<InfiniteStorage.Empty>Leeren</InfiniteStorage.Empty>
+	<InfiniteStorage.EmptyDesc>Stelle alle gelagerten Items auf den Boden.</InfiniteStorage.EmptyDesc>
+	<InfiniteStorage.Collect>Sammeln</InfiniteStorage.Collect>
+	<InfiniteStorage.CollectDesc>Sammel die Items um das Lager.</InfiniteStorage.CollectDesc>
+	<InfiniteStorage.IncludeInTradeDeals>Verkaufe gelagerte Items</InfiniteStorage.IncludeInTradeDeals>
+	<InfiniteStorage.IncludeInTradeDealsDesc>Lege fest, ob die gelagerte Items in Handelsgeschäfte einbezogen werden sollen.</InfiniteStorage.IncludeInTradeDealsDesc>
+	<InfiniteStorage.ApplyFilters>Filter anwenden</InfiniteStorage.ApplyFilters>
+	<InfiniteStorage.ApplyFiltersDesc>Filter gespeicherte Elemente.</InfiniteStorage.ApplyFiltersDesc>
+	
+	<InfiniteStorage.View>Lager anzeigen</InfiniteStorage.View>
+	<InfiniteStorage.ViewDesc>Gelagerte Items anzeigen.</InfiniteStorage.ViewDesc>
+	
+	<!-- 'View' Dialog Window -->
+	<InfiniteStorage.Search>Suchen</InfiniteStorage.Search>
+	<InfiniteStorage_Misc>Sonstiges</InfiniteStorage_Misc>
+	<InfiniteStorage_Minified>Geräte</InfiniteStorage_Minified>
+	<InfiniteStorage_Apparel>Kleidung</InfiniteStorage_Apparel>
+	<InfiniteStorage_Weapons>Waffen</InfiniteStorage_Weapons>
+	<InfiniteStorage_Chunks>Brocken</InfiniteStorage_Chunks>
+	
+	<!-- Settings Page -->
+	<InfiniteStorage>Infinite Storage</InfiniteStorage>
+	<InfiniteStorage.EnergyFactor>Energie Faktor</InfiniteStorage.EnergyFactor>
+	<InfiniteStorage.EnergyFactorDesc>Wie der Energiefaktor verwendet wird: (benötigter Strom) = (Energie Faktor) * (gelagertes Gewicht)</InfiniteStorage.EnergyFactorDesc>
+	<InfiniteStorage.EnergyFactorSet>Energie Faktor auf {v} gesetzt.</InfiniteStorage.EnergyFactorSet>
+	<InfiniteStorage.CollectThingsAutomatically>Automatisch Sammeln</InfiniteStorage.CollectThingsAutomatically>
+	<InfiniteStorage.TimeBetweenAutoCollects>Zeit zw. Auto-Sammlungen in Sekunden</InfiniteStorage.TimeBetweenAutoCollects>
+	<InfiniteStorage.TimeBetweenAutoCollectsSet>Zeit zw. Auto-Sammlungen auf {v} Sekunden gesetzt.</InfiniteStorage.TimeBetweenAutoCollectsSet>
+	<InfiniteStorage.NumberGreaterThanZero>Muss größer als 0 sein.</InfiniteStorage.NumberGreaterThanZero>
+	<InfiniteStorage.EnableEnergyBuffer>Schalte Energie Puffer ein</InfiniteStorage.EnableEnergyBuffer>
+	<InfiniteStorage.EnergyBuffer>Energie Puffer (W)</InfiniteStorage.EnergyBuffer>
+	<InfiniteStorage.EnergyBufferSet>Energie Puffer auf {v} Watt gestellt.</InfiniteStorage.EnergyBufferSet>
+	<InfiniteStorage.EnergyBufferDesc>Infinite Storage stoppt das Hinzufügen von Items, wenn die überschüssige Energie der Kolonie unter dem Puffer liegt.</InfiniteStorage.EnergyBufferDesc>
+	<InfiniteStorage.EmptyOnPowerLoss>Bei Stromausfall leeren</InfiniteStorage.EmptyOnPowerLoss>
+</LanguageData>
