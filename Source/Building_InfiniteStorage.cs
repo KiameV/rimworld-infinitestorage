@@ -1,6 +1,5 @@
 ﻿using InfiniteStorage.UI;
 using RimWorld;
-using SaveStorageSettingsUtil;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -1007,27 +1006,7 @@ namespace InfiniteStorage
 			});
 			++key;
 
-			if (this.includeInWorldLookup)
-			{
-				return SaveStorageSettingsGizmoUtil.AddSaveLoadGizmos(l, this.GetSaveStorageSettingType(), this.settings.filter);
-			}
 			return l;
-		}
-
-		private string GetSaveStorageSettingType()
-		{
-			InfiniteStorageType s = this.def.GetModExtension<InfiniteStorageType>();
-			if (s != null)
-			{
-#if DEBUG
-                Log.Warning("Found InfiniteStorageType = " + s.SaveSettingsType);
-#endif
-				return s.SaveSettingsType;
-			}
-#if DEBUG
-                Log.Warning("Did not find InfiniteStorageType def = " + def.label);
-#endif
-			return SaveTypeEnum.Zone_Stockpile.ToString();
 		}
 
 		private bool GetIncludeInWorldLookup()

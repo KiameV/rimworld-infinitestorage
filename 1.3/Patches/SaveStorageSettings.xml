@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Patch>
+	<Operation Class="PatchOperationFindMod">
+		<mods>
+			<li>[KV] Save Storage, Outfit, Crafting, Drug, &amp; Operation Settings</li>
+		</mods>
+		<match Class="PatchOperationSequence">
+			<success>Always</success>
+			<operations>
+				<li Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName="IS_MeatStorage"]/comps</xpath>
+					<value>
+						<comps>
+							<li Class="SaveStorageSettings.CompProperties_SaveStorageSettings">
+								<name>Meat_Management</name>
+							</li>
+						</comps>
+					</value>
+				</li>
+				<li Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName="IS_SilverStorage"]/comps</xpath>
+					<value>
+						<comps>
+							<li Class="SaveStorageSettings.CompProperties_SaveStorageSettings">
+								<name>ignore</name>
+							</li>
+						</comps>
+					</value>
+				</li>
+				<li Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName="IS_BodyPartStorage"]/comps</xpath>
+					<value>
+						<comps>
+							<li Class="SaveStorageSettings.CompProperties_SaveStorageSettings">
+								<name>BodyPart_Management</name>
+							</li>
+						</comps>
+					</value>
+				</li>
+				<li Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName="IS_TextileStorage"]</xpath>
+					<value>
+						<comps>
+							<li Class="SaveStorageSettings.CompProperties_SaveStorageSettings">
+								<name>Textile_Management</name>
+							</li>
+						</comps>
+					</value>
+				</li>
+				<li Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName="InfiniteStorage"]/comps</xpath>
+					<value>
+						<li Class="SaveStorageSettings.CompProperties_SaveStorageSettings">
+							<name>Zone_Stockpile</name>
+						</li>
+					</value>
+				</li>
+			</operations>
+		</match>
+	</Operation>
+</Patch>

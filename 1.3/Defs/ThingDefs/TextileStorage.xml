@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+	<ThingDef ParentName="FurnitureBase">
+		<defName>IS_TextileStorage</defName>
+		<label>textile storage</label>
+		<description>A place to store all types of fabrics, leathers, and wool.</description>
+		<thingClass>InfiniteStorage.Building_InfiniteStorage</thingClass>
+		<graphicData>
+			<texPath>Furniture/TextileStorage</texPath>
+			<graphicClass>Graphic_Multi</graphicClass>
+			<drawSize>(1,1)</drawSize>
+			<damageData>
+				<cornerTL>Damage/Corner</cornerTL>
+				<cornerTR>Damage/Corner</cornerTR>
+				<cornerBL>Damage/Corner</cornerBL>
+				<cornerBR>Damage/Corner</cornerBR>
+			</damageData>
+		</graphicData>
+		<altitudeLayer>ItemImportant</altitudeLayer>
+		<passability>PassThroughOnly</passability>
+		<fillPercent>0.4</fillPercent>
+		<castEdgeShadows>true</castEdgeShadows>
+		<stuffCategories>
+			<li>Metallic</li>
+			<li>Woody</li>
+			<li>Stony</li>
+		</stuffCategories>
+		<costStuffCount>50</costStuffCount>
+		<defaultPlacingRot>South</defaultPlacingRot>
+		<statBases>
+			<MaxHitPoints>100</MaxHitPoints>
+			<Mass>10</Mass>
+			<WorkToBuild>2000</WorkToBuild>
+			<Flammability>1.0</Flammability>
+		</statBases>
+		<size>(1,1)</size>
+		<designationHotKey>Misc12</designationHotKey>
+		<staticSunShadowHeight>0.5</staticSunShadowHeight>
+		<surfaceType>Item</surfaceType>
+		<canOverlapZones>false</canOverlapZones>
+		<inspectorTabs>
+			<li>ITab_Storage</li>
+		</inspectorTabs>
+		<building>
+			<ignoreStoredThingsBeauty>true</ignoreStoredThingsBeauty>
+			<fixedStorageSettings>
+				<filter>
+					<categories>
+						<li>Textiles</li>
+					</categories>
+					<thingDefs />
+				</filter>
+			</fixedStorageSettings>
+			<defaultStorageSettings>
+				<priority>Preferred</priority>
+				<filter>
+					<categories>
+						<li>Textiles</li>
+					</categories>
+				</filter>
+			</defaultStorageSettings>
+		</building>
+		<hasInteractionCell>True</hasInteractionCell>
+		<interactionCellOffset>(0,0,1)</interactionCellOffset>
+		<designationCategory>Misc</designationCategory>
+		<modExtensions>
+			<li Class="InfiniteStorage.InfiniteStorageType">
+				<IncludeInWorldLookup>true</IncludeInWorldLookup>
+			</li>
+			<li Class="InfiniteStorage.InfiniteStorgeGizmoViewTexture">
+				<GizmoViewTexture>viewtextile</GizmoViewTexture>
+			</li>
+		</modExtensions>
+		<tickerType>Rare</tickerType>
+	</ThingDef>
+</Defs>

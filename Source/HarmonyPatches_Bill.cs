@@ -339,7 +339,7 @@ namespace InfiniteStorage
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing = list[i];
-				if (medicalCareCategory.AllowsMedicine(thing.def) && baseValidator(thing) && pawn.CanReach(thing, PathEndMode.OnCell, Danger.Deadly, false, TraverseMode.ByPawn))
+				if (medicalCareCategory.AllowsMedicine(thing.def) && baseValidator(thing) && pawn.CanReach(thing, PathEndMode.OnCell, Danger.Deadly))
 				{
 					tmpMedicine.Add(thing);
 				}

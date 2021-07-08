@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+	<ResearchProjectDef>
+		<defName>InfiniteStorage</defName>
+		<label>Infinite Storage</label>
+		<description>Discover ways to compact things to make storage simple.</description>
+		<baseCost>1000</baseCost>
+		<techLevel>Spacer</techLevel>
+		<prerequisites>
+			<li>MultiAnalyzer</li>
+		</prerequisites>
+		<researchViewX>11</researchViewX>
+		<researchViewY>0.5</researchViewY>
+	</ResearchProjectDef>
+</Defs>
