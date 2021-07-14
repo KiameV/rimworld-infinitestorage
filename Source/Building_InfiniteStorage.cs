@@ -126,6 +126,7 @@ namespace InfiniteStorage
 		{
 			try
 			{
+				this.storedCount = 0;
 				this.Dispose();
 				base.Destroy(mode);
 			}
@@ -142,6 +143,7 @@ namespace InfiniteStorage
 		{
 			try
 			{
+				this.storedCount = 0;
 				this.Dispose();
 				base.DeSpawn(mode);
 			}
