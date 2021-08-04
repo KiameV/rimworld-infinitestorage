@@ -173,5 +173,11 @@ namespace InfiniteStorage
                 }
             }
         }
-	}
+
+        internal static void ClearAll()
+        {
+            ifStorages.Clear();
+            ifNonGlobalStorages.Clear();
+        }
+    }
 }

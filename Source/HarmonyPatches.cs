@@ -277,6 +277,16 @@ namespace InfiniteStorage
         }
     }
 
+    [HarmonyPatch(typeof(MoveColonyUtility), "MoveColonyAndReset")]
+    static class Patch_MoveColonyUtility_MoveColonyAndReset
+    {
+        [HarmonyPriority(Priority.First)]
+        static void Prefix()
+        {
+            WorldComp.ClearAll();
+        }
+    }
+
     #region Feed Self (for animals)
     /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]
     static class Patch_FoodUtility_TryFindBestFoodSourceFor
