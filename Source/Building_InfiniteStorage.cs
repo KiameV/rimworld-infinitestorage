@@ -360,20 +360,22 @@ namespace InfiniteStorage
 			}
 		}
 
-		public new bool Accepts(Thing thing)
+		public bool DoesAccept(Thing thing)
 		{
 			if (!this.AllowAdds ||
                 thing == null ||
-				!base.settings.AllowedToAccept(thing) ||
-				!this.IsOperational)
+				!this.IsOperational ||
+				!base.settings.AllowedToAccept(thing))
 			{
 				return false;
 			}
 
-			if (this.UsesPower && Settings.EnableEnergyBuffer)
+			if (this.UsesPower)
 			{
+				int buffer = Settings.EnableEnergyBuffer ? Settings.DesiredEnergyBuffer : 10;
+
 				if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick <
-					Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
+					buffer + this.GetThingWeight(thing, thing.stackCount))
 				{
 					return false;
 				}
@@ -393,7 +395,7 @@ namespace InfiniteStorage
 			}
 			else
 			{
-				if (!this.Accepts(thing))
+				if (!this.DoesAccept(thing))
 					return false;
 				if (thing.stackCount == 0)
 				{
@@ -472,10 +474,14 @@ namespace InfiniteStorage
 #if MED_DEBUG
                         Log.Message("    " + def.defName + " is medicine");
 #endif
-						rv.AddRange(l);
 						if (remove == true)
 						{
-							l.Clear();
+							if (this.TryRemove(def, out var r))
+								rv.AddRange(l);
+						}
+						else
+						{
+							rv.AddRange(l);
 						}
 					}
 #if MED_DEBUG

@@ -287,6 +287,21 @@ namespace InfiniteStorage
         }
     }
 
+    [HarmonyPatch(typeof(Building_Storage), "Accepts")]
+    static class Patch_Building_Storage_Accepts
+    {
+        [HarmonyPriority(Priority.First)]
+        static bool Prefix(Building_Storage __instance, ref bool __result, Thing t)
+        {
+            if (__instance is Building_InfiniteStorage s)
+            {
+                __result = s.DoesAccept(t);
+                return false;
+            }
+            return true;
+        }
+    }
+
     #region Feed Self (for animals)
     /*[HarmonyPatch(typeof(FoodUtility), "TryFindBestFoodSourceFor")]
     static class Patch_FoodUtility_TryFindBestFoodSourceFor
