@@ -192,12 +192,12 @@ namespace InfiniteStorage.UI
                 }
                 else
                 {
-                    d.Add(t.def.defName, new MatchedThings(t));
+                    d[t.def.defName] = new MatchedThings(t);
                 }
             }
             else
             {
-                d.Add(t.def.defName, t);
+                d[t.def.defName] = t;
             }
         }
 
