@@ -10,30 +10,14 @@ namespace InfiniteStorage
 {
 	public class Building_InfiniteStorage : Building_Storage
 	{
-		internal SortedDictionary<string, LinkedList<Thing>> storedThings = new SortedDictionary<string, LinkedList<Thing>>();
-		public IEnumerable<Thing> StoredThings
-		{
-			get
-			{
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
-					foreach (Thing t in l)
-						yield return t;
-			}
-		}
-		public int DefsCount
-		{
-			get
-			{
-				int count = 0;
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
-					count += l.Count;
-				return count;
-			}
-		}
+		internal readonly StorageManagement StorageManagement = new StorageManagement();
+
+		public IEnumerable<Thing> StoredThings => this.StorageManagement.Things;
+		public int DefsCount => this.StorageManagement.StoredThings.Count;
 
 		public bool AllowAdds { get; set; }
 
-		private Map CurrentMap { get; set; }
+		internal Map CurrentMap { get; set; }
 
 		private bool includeInTradeDeals = true;
 		public bool IncludeInTradeDeals { get { return this.includeInTradeDeals; } }
@@ -52,15 +36,11 @@ namespace InfiniteStorage
 		private bool includeInWorldLookup;
 		public bool IncludeInWorldLookup { get { return this.includeInWorldLookup; } }
 
-		[Unsaved]
-		private int storedCount = 0;
-		[Unsaved]
-		private float storedWeight = 0;
-
 		public Building_InfiniteStorage()
 		{
 			this.AllowAdds = true;
 			this.CanAutoCollect = true;
+			this.StorageManagement.Parent = this;
 		}
 
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -94,10 +74,12 @@ namespace InfiniteStorage
 
 		public bool TryGetFirstFilteredItemForMending(Bill bill, ThingFilter filter, bool remove, out Thing gotten)
 		{
+			LinkedList<Thing> l = null;
 			gotten = null;
-			foreach (LinkedList<Thing> l in this.storedThings.Values)
+			foreach (var kv in this.StorageManagement.StoredThings)
 			{
-				if (l != null && l.Count > 0)
+				l = kv.Value;
+				if (l?.Count > 0)
 				{
 					for (LinkedListNode<Thing> n = l.First; n.Next != null; n = n.Next)
 					{
@@ -112,7 +94,7 @@ namespace InfiniteStorage
 								continue;
 							}
                             
-							l.Remove(n);
+							this.StorageManagement.Remove(l, n);
 							BuildingUtil.DropSingleThing(t, this, this.Map, out gotten);
 							return true;
 						}
@@ -126,7 +108,7 @@ namespace InfiniteStorage
 		{
 			try
 			{
-				this.storedCount = 0;
+				this.StorageManagement.Destroy();
 				this.Dispose();
 				base.Destroy(mode);
 			}
@@ -143,7 +125,7 @@ namespace InfiniteStorage
 		{
 			try
 			{
-				this.storedCount = 0;
+				this.StorageManagement.DeSpawn();
 				this.Dispose();
 				base.DeSpawn(mode);
 			}
@@ -161,14 +143,7 @@ namespace InfiniteStorage
 			try
 			{
 				this.AllowAdds = false;
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
-				{
-					foreach (Thing t in l)
-					{
-						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap);
-					}
-				}
-				this.storedThings.Clear();
+				this.StorageManagement.Empty();
 			}
 			catch (Exception e)
 			{
@@ -194,16 +169,7 @@ namespace InfiniteStorage
 			try
 			{
 				this.AllowAdds = false;
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
-				{
-					foreach (Thing t in l)
-					{
-						BuildingUtil.DropThing(t, t.stackCount, this, this.CurrentMap, droppedThings);
-					}
-					l.Clear();
-				}
-				this.storedCount = 0;
-				this.storedWeight = 0;
+				this.StorageManagement.Empty(droppedThings);
 			}
 			finally
 			{
@@ -216,33 +182,29 @@ namespace InfiniteStorage
 		{
 			if (this.IsOperational && this.CanAutoCollect)
 			{
-				float powerAvailable = 0;
-				if (this.UsesPower && Settings.EnableEnergyBuffer)
-				{
-					powerAvailable = this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick;
-					if (powerAvailable <= Settings.DesiredEnergyBuffer)
-					{
-						return;
-					}
-					powerAvailable -= Settings.DesiredEnergyBuffer;
-				}
-
 				foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
 				{
 					if (chosen == null || !this.ChosenContains(t, chosen))
 					{
-						if (this.UsesPower && Settings.EnableEnergyBuffer)
-						{
-							float newWeight = this.storedWeight + this.GetThingWeight(t, t.stackCount);
-							if (newWeight * Settings.EnergyFactor > powerAvailable)
-							{
-								continue;
-							}
-						}
 						this.Add(t);
 					}
 				}
 			}
+		}
+
+		public float GetPowerAvailable()
+		{
+			float powerAvailable = 0;
+			if (this.UsesPower && Settings.EnableEnergyBuffer)
+			{
+				powerAvailable = this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick;
+				if (powerAvailable <= Settings.DesiredEnergyBuffer)
+				{
+					return -1;
+				}
+				powerAvailable -= Settings.DesiredEnergyBuffer;
+			}
+			return powerAvailable;
 		}
 
 		public void ForceReclaim()
@@ -273,8 +235,7 @@ namespace InfiniteStorage
 		public int StoredThingCount(ThingDef expectedDef, ThingFilter ingrediantFilter)
 		{
 			int count = 0;
-			LinkedList<Thing> l;
-			if (this.storedThings.TryGetValue(expectedDef.ToString(), out l))
+			if (this.StorageManagement.StoredThings.TryGetValue(expectedDef.ToString(), out var l))
 			{
 				foreach (Thing t in l)
 				{
@@ -362,23 +323,7 @@ namespace InfiniteStorage
 
 		public new bool Accepts(Thing thing)
 		{
-			if (!this.AllowAdds ||
-                thing == null ||
-				!base.settings.AllowedToAccept(thing) ||
-				!this.IsOperational)
-			{
-				return false;
-			}
-
-			if (this.UsesPower && Settings.EnableEnergyBuffer)
-			{
-				if (this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick <
-					Settings.DesiredEnergyBuffer + this.GetThingWeight(thing, thing.stackCount))
-				{
-					return false;
-				}
-			}
-			return true;
+			return this.StorageManagement.CanAdd(thing);
 		}
 
 		public bool Add(Thing thing, bool force = false)
@@ -393,53 +338,14 @@ namespace InfiniteStorage
 			}
 			else
 			{
-				if (!this.Accepts(thing))
+				if (!this.StorageManagement.CanAdd(thing))
 					return false;
-				if (thing.stackCount == 0)
-				{
-#if DEBUG
-                Log.Warning("Add " + thing.Label + " has 0 stack count");
-#endif
-					return true;
-				}
 			}
+
 			if (thing.Spawned)
-			{
 				thing.DeSpawn();
-			}
 
-			int thingsAdded = thing.stackCount;
-			if (this.storedThings.TryGetValue(thing.def.ToString(), out LinkedList<Thing> l))
-			{
-				bool absorbed = false;
-				if (thing.def.stackLimit > 1)
-				{
-					foreach (Thing t in l)
-					{
-						if (t.TryAbsorbStack(thing, false))
-						{
-							absorbed = true;
-						}
-					}
-				}
-				if (!absorbed)
-				{
-					l.AddLast(thing);
-				}
-			}
-			else
-			{
-				l = new LinkedList<Thing>();
-				l.AddFirst(thing);
-				this.storedThings.Add(thing.def.ToString(), l);
-			}
-			this.UpdateStoredStats(thing, thingsAdded, true);
-			return true;
-		}
-
-		private float GetThingWeight(Thing thing, int count)
-		{
-			return thing.GetStatValue(StatDefOf.Mass, true) * count;
+			return this.StorageManagement.Add(thing, force);
 		}
 
 		private static bool IsBodyPart(ThingDef td)
@@ -460,7 +366,7 @@ namespace InfiniteStorage
             Log.Warning("Start GetMedicalThings (includeBodyParts: " + includeBodyParts + ", remove: " + remove + ")");
 #endif
 			List<Thing> rv = new List<Thing>();
-			foreach (LinkedList<Thing> l in this.storedThings.Values)
+			foreach (LinkedList<Thing> l in this.StorageManagement.StoredThings.Values)
 			{
 				if (l.Count > 0)
 				{
@@ -472,11 +378,14 @@ namespace InfiniteStorage
 #if MED_DEBUG
                         Log.Message("    " + def.defName + " is medicine");
 #endif
-						rv.AddRange(l);
 						if (remove == true)
 						{
-							l.Clear();
+							if (this.StorageManagement.TryRemove(def, out var removed))
+								rv.AddRange(removed);
 						}
+						else
+							rv.AddRange(l);
+
 					}
 #if MED_DEBUG
                     else
@@ -493,22 +402,19 @@ namespace InfiniteStorage
 		public bool TryGetFilteredThings(Bill bill, ThingFilter filter, out List<Thing> gotten)
 		{
 			gotten = null;
-			foreach (LinkedList<Thing> l in this.storedThings.Values)
+			foreach (LinkedList<Thing> l in this.StorageManagement.StoredThings.Values)
 			{
-				if (l.Count > 0)
+				if (l.Count > 0 && bill.IsFixedOrAllowedIngredient(l.First.Value.def))
 				{
-					if (bill.IsFixedOrAllowedIngredient(l.First.Value.def))
+					foreach (Thing t in l)
 					{
-						foreach (Thing t in l)
+						if (filter.Allows(t))
 						{
-							if (filter.Allows(t))
+							if (gotten == null)
 							{
-								if (gotten == null)
-								{
-									gotten = new List<Thing>();
-								}
-								gotten.Add(t);
+								gotten = new List<Thing>();
 							}
+							gotten.Add(t);
 						}
 					}
 				}
@@ -521,7 +427,7 @@ namespace InfiniteStorage
 			if (def != null)
 			{
 				LinkedList<Thing> l;
-				if (this.storedThings.TryGetValue(def.ToString(), out l))
+				if (this.StorageManagement.StoredThings.TryGetValue(def.ToString(), out l))
 				{
 					if (l.Count > 0)
 					{
@@ -536,7 +442,7 @@ namespace InfiniteStorage
 
 		public bool TryRemove(ThingFilter filter, out List<Thing> removed)
 		{
-			foreach (LinkedList<Thing> l in this.storedThings.Values)
+			foreach (LinkedList<Thing> l in this.StorageManagement.StoredThings.Values)
 			{
 				if (l.Count > 0 &&
 					filter.Allows(l.First.Value.def))
@@ -590,16 +496,7 @@ namespace InfiniteStorage
 
 		public bool TryRemove(Thing thing)
 		{
-			LinkedList<Thing> l;
-			if (this.storedThings.TryGetValue(thing.def.ToString(), out l))
-			{
-				if (l.Remove(thing))
-				{
-					this.UpdateStoredStats(thing, thing.stackCount, false);
-					return true;
-				}
-			}
-			return false;
+			return this.StorageManagement.Remove(thing);
 		}
 
 		/*public bool DropMeatThings(Bill bill)
@@ -667,19 +564,7 @@ namespace InfiniteStorage
 
 		public bool TryRemove(ThingDef def, out IEnumerable<Thing> removed)
 		{
-			LinkedList<Thing> l;
-			if (this.storedThings.TryGetValue(def.ToString(), out l))
-			{
-				this.storedThings.Remove(def.ToString());
-				removed = l;
-				foreach (Thing t in l)
-				{
-					this.UpdateStoredStats(t, t.stackCount, false);
-				}
-				return true;
-			}
-			removed = null;
-			return false;
+			return this.StorageManagement.TryRemove(def, out removed);
 		}
 
 		public bool TryRemove(Thing thing, int count, out List<Thing> removed)
@@ -689,102 +574,8 @@ namespace InfiniteStorage
 
 		public bool TryRemove(ThingDef def, int count, out List<Thing> removed)
 		{
-#if DEBUG || DROP_DEBUG
-            Log.Warning("TryRemove(ThingDef, int, out List<Thing>)");
-#endif
-			LinkedList<Thing> l;
-			removed = null;
-			if (this.storedThings.TryGetValue(def.ToString(), out l))
-			{
-				int need = count;
-				int removeCount = 0;
-				LinkedListNode<Thing> n = l.First;
-				while (n != null && need > 0)
-				{
-					Thing t = n.Value;
-					LinkedListNode<Thing> next = n.Next;
-#if DEBUG || DROP_DEBUG
-                    Log.Warning("    Iteration: " + t.Label);
-#endif
-
-					if (removed == null)
-					{
-						removed = new List<Thing>();
-					}
-
-					if (t.stackCount == 0 || t.Destroyed)
-					{
-#if DEBUG || DROP_DEBUG
-                        Log.Warning("        0 stack count");
-#endif
-						l.Remove(n);
-					}
-					else if (need >= t.stackCount)
-					{
-#if DEBUG || DROP_DEBUG
-                        Log.Warning("        need >= t.stackCount");
-#endif
-						//Log.Error("Using meat: " + t.ThingID + " " + t.stackCount + " " + t.Destroyed);
-						need -= t.stackCount;
-						removeCount += t.stackCount;
-						l.Remove(n);
-						removed.Add(t);
-					}
-					else
-					{
-						removeCount += need;
-						while (need > 0)
-						{
-							int toRemove = Math.Min(need, t.def.stackLimit);
-							//Log.Error("toRemove: " + toRemove + " -- Math.Min " + need + ", " + t.def.stackLimit);
-							need -= toRemove;
-							Thing split = t.SplitOff(toRemove);
-							//Log.Error("Parent meat: " + t.ThingID + " " + t.stackCount + " " + t.Destroyed);
-							//Log.Error("Split meat: " + split.ThingID + " " + split.stackCount + " " + split.Destroyed);
-#if DEBUG || DROP_DEBUG
-                        Log.Warning("        else split off to remove - " + split.ToString() + " - " + split.Label);
-#endif
-							removed.Add(split);
-						}
-					}
-					n = next;
-				}
-
-				if (removed != null && removed.Count > 0 && removeCount > 0)
-				{
-#if DEBUG || DROP_DEBUG
-                    Log.Warning("    UpdateStoredStats: List.Count: " + removed.Count + " removeCount: " + removeCount);
-#endif
-					this.UpdateStoredStats(removed[0], removeCount, false);
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private void UpdateStoredStats(Thing thing, int count, bool isAdding, bool force = false)
-		{
-			float weight = this.GetThingWeight(thing, count);
-			if (!isAdding)
-			{
-				weight *= -1;
-				count *= -1;
-			}
-			this.storedCount += count;
-			this.storedWeight += weight;
-			if (this.storedWeight < 0)
-			{
-				this.storedCount = 0;
-				this.storedWeight = 0;
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
-				{
-					foreach (Thing t in l)
-					{
-						this.UpdateStoredStats(thing, count, true, true);
-					}
-				}
-			}
+			removed = new List<Thing>();
+			return this.StorageManagement.TryRemove(def, count, removed);
 		}
 
 		/*ublic new float MarketValue
@@ -837,7 +628,7 @@ namespace InfiniteStorage
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
 				this.temp = new List<Thing>();
-				foreach (LinkedList<Thing> l in this.storedThings.Values)
+				foreach (LinkedList<Thing> l in this.StorageManagement.StoredThings.Values)
 				{
 					foreach (Thing t in l)
 					{
@@ -851,7 +642,7 @@ namespace InfiniteStorage
 
 			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs)
 			{
-				this.storedThings.Clear();
+				this.StorageManagement.Clear();
 
 				if (this.temp != null)
 				{
@@ -885,13 +676,13 @@ namespace InfiniteStorage
 			{
 				sb.Append("InfiniteStorage.StoredWeight".Translate());
 				sb.Append(": ");
-				sb.Append(this.storedWeight.ToString("N1"));
+				sb.Append(this.StorageManagement.StoredWeight.ToString("N1"));
 			}
 			else
 			{
 				sb.Append("InfiniteStorage.Count".Translate());
 				sb.Append(": ");
-				sb.Append(this.storedCount);
+				sb.Append(this.StorageManagement.StoredCount);
 			}
 			sb.Append(Environment.NewLine);
 			sb.Append("InfiniteStorage.IncludeInTradeDeals".Translate());
@@ -908,7 +699,7 @@ namespace InfiniteStorage
 			base.TickRare();
 			if (this.Spawned && base.Map != null && this.compPowerTrader != null)
 			{
-				this.compPowerTrader.PowerOutput = -1 * Settings.EnergyFactor * this.storedWeight;
+				this.compPowerTrader.PowerOutput = -1 * Settings.EnergyFactor * this.StorageManagement.StoredWeight;
 			}
 			long now = DateTime.Now.Ticks;
 #if DEBUG
@@ -924,14 +715,20 @@ namespace InfiniteStorage
 				this.lastAutoReclaim = now;
 			}
 
-			if (!this.IsOperational && Settings.EmptyOnPowerLoss && this.storedCount > 0 && Settings.EnergyFactor > 0.00001f)
+			if (!this.IsOperational && Settings.EmptyOnPowerLoss && this.StorageManagement.StoredCount > 0 && Settings.EnergyFactor > 0.00001f)
 			{
 				this.Empty(null, true);
 			}
+
+			/*if ((DateTime.Now - lastCountUpdate).Ticks > TEN_SECONDS)
+            {
+				this.UpdateCount();
+				lastCountUpdate = DateTime.Now;
+            }*/
 		}
 
-		#region Gizmos
-		public override IEnumerable<Gizmo> GetGizmos()
+        #region Gizmos
+        public override IEnumerable<Gizmo> GetGizmos()
 		{
 			IEnumerable<Gizmo> enumerables = base.GetGizmos();
 

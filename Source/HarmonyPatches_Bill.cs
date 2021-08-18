@@ -234,7 +234,7 @@ namespace InfiniteStorage
 #if BILL_DEBUG
 					//Log.Warning("        need ing count: " + needed);
 #endif
-					foreach (LinkedList<Thing> l in s.storedThings.Values)
+					foreach (LinkedList<Thing> l in s.StorageManagement.StoredThings.Values)
 					{
 						if (l != null && l.Count > 0 && ing.filter.Allows(l.First.Value.def))
 						{
