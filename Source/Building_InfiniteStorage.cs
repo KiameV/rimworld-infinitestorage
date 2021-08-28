@@ -462,7 +462,8 @@ namespace InfiniteStorage
             Log.Warning("Start GetMedicalThings (includeBodyParts: " + includeBodyParts + ", remove: " + remove + ")");
 #endif
 			List<Thing> rv = new List<Thing>();
-			foreach (LinkedList<Thing> l in this.storedThings.Values)
+			List<LinkedList<Thing>> lists = new List<LinkedList<Thing>>(this.storedThings.Values);
+			foreach (LinkedList<Thing> l in lists)
 			{
 				if (l.Count > 0)
 				{
