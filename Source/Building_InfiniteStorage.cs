@@ -245,6 +245,39 @@ namespace InfiniteStorage
 			}
 		}
 
+		public void ReclaimFaster(bool respectReserved = true, Dictionary<int, int> chosen = null)
+		{
+			if (this.IsOperational && this.CanAutoCollect)
+			{
+				float powerAvailable = 0;
+				if (this.UsesPower && Settings.EnableEnergyBuffer)
+				{
+					powerAvailable = this.compPowerTrader.PowerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick;
+					if (powerAvailable <= Settings.DesiredEnergyBuffer)
+					{
+						return;
+					}
+					powerAvailable -= Settings.DesiredEnergyBuffer;
+				}
+
+				foreach (Thing t in BuildingUtil.FindThingsOfTypeNextTo(base.Map, base.Position, 1))
+				{
+					if (t != null && !chosen.ContainsKey(t.thingIDNumber))
+					{
+						if (this.UsesPower && Settings.EnableEnergyBuffer)
+						{
+							float newWeight = this.storedWeight + this.GetThingWeight(t, t.stackCount);
+							if (newWeight * Settings.EnergyFactor > powerAvailable)
+							{
+								continue;
+							}
+						}
+						this.Add(t);
+					}
+				}
+			}
+		}
+
 		public void ForceReclaim()
 		{
 			if (base.Map == null)
@@ -426,6 +459,9 @@ namespace InfiniteStorage
 				}
 				if (!absorbed)
 				{
+					foreach (var t in l)
+						if (t == thing)
+							return true;
 					l.AddLast(thing);
 				}
 			}
@@ -521,6 +557,31 @@ namespace InfiniteStorage
 				}
 			}
 			return gotten != null;
+		}
+
+		public bool TryDropFilteredThings(ThingFilter filter, out List<Thing> dropped)
+		{
+			dropped = null;
+			foreach (LinkedList<Thing> l in this.storedThings.Values)
+			{
+				if (l.Count > 0)
+				{
+					if (filter.Allows(l.First.Value.def))
+					{
+						foreach (Thing t in l)
+						{
+							if (filter.Allows(t))
+							{
+								this.DropThing(t, null);
+								if (dropped == null)
+									dropped = new List<Thing>();
+								dropped.Add(t);
+							}
+						}
+					}
+				}
+			}
+			return dropped?.Count > 0;
 		}
 
 		public bool TryGetValue(ThingDef def, out Thing t)

@@ -143,10 +143,7 @@ namespace InfiniteStorage
                 Log.Warning("HealthCardUtility.DrawMedOperationsTab");
 #endif
 
-                if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Count > 0)
-                {
-                    Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
-                }
+                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
 
                 Map map = Find.CurrentMap;
                 if (map != null)
@@ -177,10 +174,7 @@ namespace InfiniteStorage
 
             static void Postfix()
             {
-                if (Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Count > 0)
-                {
-                    Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
-                }
+                Patch_ListerThings_ThingsInGroup.AvailableMedicalThing.Clear();
             }
 
             /*public static IEnumerable<ThingDef> PotentiallyMissingIngredients(Pawn billDoer, Map map)
