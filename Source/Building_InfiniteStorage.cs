@@ -559,18 +559,18 @@ namespace InfiniteStorage
 			return gotten != null;
 		}
 
-		public bool TryDropFilteredThings(ThingFilter filter, out List<Thing> dropped)
+		public bool TryDropThings(IngredientCount ic, out List<Thing> dropped)
 		{
 			dropped = null;
 			foreach (LinkedList<Thing> l in this.storedThings.Values)
 			{
 				if (l.Count > 0)
 				{
-					if (filter.Allows(l.First.Value.def))
+					if (ic.filter.Allows(l.First.Value.def))
 					{
 						foreach (Thing t in l)
 						{
-							if (filter.Allows(t))
+							if (ic.filter.Allows(t))
 							{
 								this.DropThing(t, null);
 								if (dropped == null)
