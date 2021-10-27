@@ -22,23 +22,26 @@ namespace InfiniteStorage
 	{
 		static void Prefix(List<IngredientCount> ingredients, Pawn pawn, ref List<Pair<Building_InfiniteStorage, List<Thing>>> __state)
 		{
-			foreach (var s in WorldComp.GetInfiniteStorages(pawn.Map))
+			if (ingredients != null && pawn != null)
 			{
-				List<Thing> d = null;
-				foreach (var i in ingredients)
+				foreach (var s in WorldComp.GetInfiniteStorages(pawn.Map))
 				{
-					if (s.TryDropThings(i, out List<Thing> dropped))
+					List<Thing> d = null;
+					foreach (var i in ingredients)
 					{
-						if (d == null)
-							d = new List<Thing>();
-						d.AddRange(dropped);
+						if (s.TryDropThings(i, out List<Thing> dropped))
+						{
+							if (d == null)
+								d = new List<Thing>();
+							d.AddRange(dropped);
+						}
 					}
-				}
-				if (d?.Count > 0)
-				{
-					if (__state == null)
-						__state = new List<Pair<Building_InfiniteStorage, List<Thing>>>();
-					__state.Add(new Pair<Building_InfiniteStorage, List<Thing>>(s, d));
+					if (d?.Count > 0)
+					{
+						if (__state == null)
+							__state = new List<Pair<Building_InfiniteStorage, List<Thing>>>();
+						__state.Add(new Pair<Building_InfiniteStorage, List<Thing>>(s, d));
+					}
 				}
 			}
 		}
@@ -54,15 +57,18 @@ namespace InfiniteStorage
 
 			if (__result == false)
 			{
-				foreach (var p in __state)
+				if (__state != null)
 				{
-					foreach (var t in p.Second)
+					foreach (var p in __state)
 					{
-						p.First.Add(t);
+						foreach (var t in p.Second)
+						{
+							p.First.Add(t);
+						}
 					}
 				}
 			}
-			else
+			else if (pawn != null && ingredients != null && chosen != null)
 			{
 				Dictionary<int, int> chosenLookup = new Dictionary<int, int>();
 				foreach (var t in chosen)
